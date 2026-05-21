@@ -1,0 +1,156 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro" name="mur620" >
+
+
+	<xacro:arg name="robot_namespace" default=''/>
+	<xacro:arg name="tf_prefix" default='UR10_l/'/>
+	<xacro:arg name="tf_prefix_mir" default='mur620'/>
+	<xacro:arg name="name" default=''/>
+	<xacro:arg name="use_lift" default='true'/>
+	<xacro:property name="use_lift" value="$(arg use_lift)"/>
+	<xacro:arg name="ur_l_xyz" default='0 0 0'/>
+	<xacro:arg name="ur_l_rpy" default='0 0 0'/>
+	<xacro:property name="ur_l_xyz" value="$(arg ur_l_xyz)"/>
+	<xacro:property name="ur_l_rpy" value="$(arg ur_l_rpy)"/>
+	<xacro:arg name="ur_r_xyz" default='0 0 0'/>
+	<xacro:arg name="ur_r_rpy" default='0 0 3.14159265359'/>
+	<xacro:property name="ur_r_xyz" value="$(arg ur_r_xyz)"/>
+	<xacro:property name="ur_r_rpy" value="$(arg ur_r_rpy)"/>
+
+	<!-- UR parameters -->
+	<xacro:arg name="ur_type" default="ur10e"/>
+	<xacro:arg name="joint_limit_params" default="$(find mur_moveit_config)/config/joint_limits.yaml"/>
+	<xacro:arg name="kinematics_params" default="$(find ur_description)/config/$(arg ur_type)/default_kinematics.yaml"/>
+	<xacro:arg name="physical_params" default="$(find ur_description)/config/$(arg ur_type)/physical_parameters.yaml"/>
+	<xacro:arg name="visual_params" default="$(find ur_description)/config/$(arg ur_type)/visual_parameters.yaml"/>
+	<xacro:arg name="transmission_hw_interface" default=""/>
+	<xacro:arg name="safety_limits" default="false"/>
+	<xacro:arg name="safety_pos_margin" default="0.15"/>
+	<xacro:arg name="safety_k_position" default="20"/>
+
+	<xacro:arg name="simulation_controllers" default="" />
+
+
+	<!-- MiR600 base -->
+	<xacro:include filename="$(find mir_description)/urdf/mir_600/mir_600.urdf.xacro" />
+	<xacro:include filename="$(find mir_description)/urdf/mir_600/mir_600.gazebo.xacro" />
+	<xacro:include filename="$(find mir_description)/urdf/general/sick_s300.gazebo.xacro" />
+	<!-- <xacro:include filename="$(find ur_simulation_gz)/urdf/ur_gz.urdf.xacro"/> -->
+	<xacro:include filename="$(find ur_simulation_gz)/urdf/ur_gz.ros2_control.xacro" />
+	<xacro:include filename="$(find ur_description)/urdf/ur_macro.xacro"/>
+	<xacro:include filename="$(find mir_description)/ros2_control/mir_robot.ros2_control.xacro" />
+	<xacro:include filename="$(find mir_description)/urdf/mir_600/mir_600_top_lift.urdf.xacro" />
+
+	<!-- Include plugin xacros -->
+	<xacro:include filename="$(find mir_description)/urdf/general/plugins.gazebo.xacro" />
+
+	<!-- Init the MiR600 marco that is also used for the hardware -->
+	<xacro:mir_600/>
+	<!-- Init the MiR600 macro that includes all infos that Gazebo need to function -->
+	<xacro:mir_600_gazebo tf_prefix="$(arg tf_prefix_mir)" robot_namespace="$(arg robot_namespace)"/>
+	<!-- Init the plugins that run the MiR in Gazebo -->
+	<xacro:controller_plugin_gazebo robot_namespace="$(arg robot_namespace)"/>
+	<xacro:p3d_base_controller robot_namespace="$(arg robot_namespace)"/>
+	<xacro:gazebo_sim_sensors robot_namespace="$(arg robot_namespace)"/>
+	<xacro:mir_robot_ros2_control/>
+
+
+	<!-- UR10_l -->
+	<xacro:ur_robot
+		name="UR10_l"
+		tf_prefix="UR10_l/"
+		parent="UR10_l/base_ideal"
+		joint_limits_parameters_file="$(arg joint_limit_params)"
+		kinematics_parameters_file="$(arg kinematics_params)"
+		physical_parameters_file="$(arg physical_params)"
+		visual_parameters_file="$(arg visual_params)"
+		safety_limits="$(arg safety_limits)"
+		safety_pos_margin="$(arg safety_pos_margin)"
+		safety_k_position="$(arg safety_k_position)"
+		force_abs_paths="true"
+		>
+		<origin xyz="0 0 0" rpy="$(arg ur_l_rpy)" />          <!-- position robot in the world -->
+  	</xacro:ur_robot>
+
+	<xacro:ur_robot
+		name="UR10_r"
+		tf_prefix="UR10_r/"
+		parent="UR10_r/base_ideal"
+		joint_limits_parameters_file="$(arg joint_limit_params)"
+		kinematics_parameters_file="$(arg kinematics_params)"
+		physical_parameters_file="$(arg physical_params)"
+		visual_parameters_file="$(arg visual_params)"
+		safety_limits="$(arg safety_limits)"
+		safety_pos_margin="$(arg safety_pos_margin)"
+		safety_k_position="$(arg safety_k_position)"
+		force_abs_paths="true"
+		>
+		<origin xyz="0 0 0" rpy="$(arg ur_r_rpy)" />          <!-- position robot in the world -->
+  	</xacro:ur_robot>
+
+	<xacro:ur_ros2_control
+		name="UR10_l"
+		tf_prefix="UR10_l/"
+		transmission_hw_interface="$(arg transmission_hw_interface)"
+	/>
+
+	<xacro:ur_ros2_control
+		name="UR10_r"
+		tf_prefix="UR10_r/"
+		transmission_hw_interface="$(arg transmission_hw_interface)"
+	/>
+
+
+		<!-- virtual link rotated to show in same direction like mir  -->
+	<link name="UR10_l/base_ideal" />
+	<link name="UR10_r/base_ideal" />
+
+	<!-- Init the lift macro -->
+	<xacro:if value="${use_lift}">
+		<xacro:top_lift/>
+
+		<joint name="plattform_manipulator_joint_l" type="fixed">
+				<parent link="left_lift_top" />
+				<child link="UR10_l/base_ideal" />
+				<origin xyz="0.0 0.0 0.555" rpy="0 0 0" />
+		</joint>
+
+		<joint name="plattform_manipulator_joint_r" type="fixed">
+				<parent link="right_lift_top" />
+				<child link="UR10_r/base_ideal" />
+				<origin xyz="0.0 0.0 0.555" rpy="0 0 0" />
+		</joint>
+	</xacro:if>
+
+	<xacro:unless value="${use_lift}">
+		<joint name="plattform_manipulator_joint_l" type="fixed">
+			<parent link="left_lift_bottom" />
+			<child link="UR10_l/base_ideal" />
+			<origin xyz="0.0 0.0 0.555" rpy="0 0 0" />
+		</joint>
+
+		<joint name="plattform_manipulator_joint_r" type="fixed">
+			<parent link="right_lift_bottom" />
+			<child link="UR10_r/base_ideal" />
+			<origin xyz="0.0 0.0 0.555" rpy="0 0 0" />
+		</joint>
+
+	</xacro:unless>
+
+	<!-- Because one arm is mounted backwards. TODO: use calibrated pose -->
+	<!-- <joint name="plattform_ur_calibration_joint_l" type="fixed">
+			<parent link="UR10_l/base_ideal" />
+			<child link="UR10_l/base_link" />
+			<origin xyz="${ur_l_xyz}" rpy="${ur_l_rpy}" /> 
+	</joint> -->
+
+	<!-- <joint name="plattform_ur_calibration_joint_r" type="fixed">
+			<parent link="UR10_r/base_ideal" />
+			<child link="UR10_r/base_link" />
+			<origin xyz="${ur_r_xyz}" rpy="${ur_r_rpy}" /> 
+	</joint> -->
+	<!-- <xacro:mir_robot_gazebo/> -->
+	<!-- <xacro:sick_s300_gazebo link="front_laser_link" robot_namespace="" topic="scan" tf_prefix=""/> -->
+	<!-- <xacro:mir_robot_gazebo/> -->
+
+</robot>

@@ -1,0 +1,36 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 100  # Hz
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    mir_base_controller:
+      type: diff_drive_controller/DiffDriveController
+
+    ur_manipulator_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+mir_base_controller:
+  ros__parameters:
+    left_wheel_names: ["left_wheel_joint"]
+    right_wheel_names: ["right_wheel_joint"]
+    wheel_separation: 0.445208
+    wheel_radius: 0.0625
+    use_stamped_vel: false
+    base_frame_id: base_footprint
+
+ur_manipulator_controller:
+  ros__parameters:
+    joints:
+      - shoulder_pan_joint
+      - shoulder_lift_joint
+      - elbow_joint
+      - wrist_1_joint
+      - wrist_2_joint
+      - wrist_3_joint
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity

@@ -1,0 +1,199 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 100  # Hz
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    mobile_base_controller:
+      type: diff_drive_controller/DiffDriveController
+
+    lift_controller_l: 
+      type: position_controllers/JointGroupPositionController # for some reason the single joint controller doesn't work - so we use the group controller with a single joint #TODO: fix this
+      interface_name: position
+      joints: ["left_lift_joint"]
+      pid:
+        p: 5.0
+        i: 20.0
+        i_clamp: 100.0
+
+    lift_controller_r: 
+      type: position_controllers/JointGroupPositionController
+      interface_name: position
+      joints: ["right_lift_joint"]
+      pid:
+        p: 5.0
+        i: 20.0
+        i_clamp: 100.0
+
+    force_torque_sensor_broadcaster:
+      #type: ur_controllers/ForceTorqueStateBroadcaster
+      type: force_torque_sensor_broadcaster/ForceTorqueSensorBroadcaster
+
+    forward_velocity_controller_l:
+      type: velocity_controllers/JointGroupVelocityController
+
+    forward_position_controller_l:
+      type: position_controllers/JointGroupPositionController
+
+    forward_velocity_controller_r:
+      type: velocity_controllers/JointGroupVelocityController
+
+    forward_position_controller_r:
+      type: position_controllers/JointGroupPositionController
+
+    joint_trajectory_controller_l:
+      type: joint_trajectory_controller/JointTrajectoryController
+      
+    joint_trajectory_controller_r:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+# -----------------------------------
+mobile_base_controller:
+  ros__parameters:
+    type: diff_drive_controller/DiffDriveController
+    odom_frame_id: "odom"  # The parent frame (change this value)
+    base_frame_id: "base_footprint"  # The child frame
+    left_wheel_names: ["left_wheel_joint"]
+    right_wheel_names: ["right_wheel_joint"]
+    wheel_separation : 0.445208
+    wheel_radius : 0.0625
+
+    # Publish rate
+    publish_rate: 41.2               # this is what the real MiR platform publishes (default: 50)
+
+lift_controller_l:
+  ros__parameters:
+    type: position_controllers/JointGroupPositionController
+    joints: ["left_lift_joint"]
+    interface_name: position
+    pid:
+      p: 5.0
+      i: 20.0
+      i_clamp: 100.0
+
+lift_controller_r:
+  ros__parameters:
+    type: position_controllers/JointGroupPositionController
+    joints: ["right_lift_joint"]
+    interface_name: position
+    pid:
+      p: 5.0
+      i: 20.0
+      i_clamp: 100.0
+
+
+speed_scaling_state_broadcaster:
+  ros__parameters:
+    state_publish_rate: 100.0
+
+
+force_torque_sensor_broadcaster:
+  ros__parameters:
+    sensor_name: tcp_fts_sensor
+    state_interface_names:
+      - force.x
+      - force.y
+      - force.z
+      - torque.x
+      - torque.y
+      - torque.z
+    frame_id: tool0
+    topic_name: ft_data
+
+forward_velocity_controller_l:
+  ros__parameters:
+    joints:
+      - UR10_l/shoulder_pan_joint
+      - UR10_l/shoulder_lift_joint
+      - UR10_l/elbow_joint
+      - UR10_l/wrist_1_joint
+      - UR10_l/wrist_2_joint
+      - UR10_l/wrist_3_joint
+    interface_name: velocity
+
+forward_velocity_controller_r:
+  ros__parameters:
+    joints:
+      - UR10_r/shoulder_pan_joint
+      - UR10_r/shoulder_lift_joint
+      - UR10_r/elbow_joint
+      - UR10_r/wrist_1_joint
+      - UR10_r/wrist_2_joint
+      - UR10_r/wrist_3_joint
+    interface_name: velocity
+
+forward_position_controller_l:
+  ros__parameters:
+    joints:
+      - UR10_l/shoulder_pan_joint
+      - UR10_l/shoulder_lift_joint
+      - UR10_l/elbow_joint
+      - UR10_l/wrist_1_joint
+      - UR10_l/wrist_2_joint
+      - UR10_l/wrist_3_joint
+
+forward_position_controller_r:
+  ros__parameters:
+    joints:
+      - UR10_r/shoulder_pan_joint
+      - UR10_r/shoulder_lift_joint
+      - UR10_r/elbow_joint
+      - UR10_r/wrist_1_joint
+      - UR10_r/wrist_2_joint
+      - UR10_r/wrist_3_joint
+
+joint_trajectory_controller_l:
+  ros__parameters:
+    joints:
+      - UR10_l/shoulder_pan_joint
+      - UR10_l/shoulder_lift_joint
+      - UR10_l/elbow_joint
+      - UR10_l/wrist_1_joint
+      - UR10_l/wrist_2_joint
+      - UR10_l/wrist_3_joint
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity
+    state_publish_rate: 100.0
+    action_monitor_rate: 20.0
+    allow_partial_joints_goal: false
+    constraints:
+      stopped_velocity_tolerance: 0.2
+      goal_time: 0.0
+      shoulder_pan_joint: { trajectory: 0.2, goal: 0.1 }
+      shoulder_lift_joint: { trajectory: 0.2, goal: 0.1 }
+      elbow_joint: { trajectory: 0.2, goal: 0.1 }
+      wrist_1_joint: { trajectory: 0.2, goal: 0.1 }
+      wrist_2_joint: { trajectory: 0.2, goal: 0.1 }
+      wrist_3_joint: { trajectory: 0.2, goal: 0.1 }
+
+
+joint_trajectory_controller_r:
+  ros__parameters:
+    joints:
+      - UR10_r/shoulder_pan_joint
+      - UR10_r/shoulder_lift_joint
+      - UR10_r/elbow_joint
+      - UR10_r/wrist_1_joint
+      - UR10_r/wrist_2_joint
+      - UR10_r/wrist_3_joint
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity
+    state_publish_rate: 100.0
+    action_monitor_rate: 20.0
+    allow_partial_joints_goal: false
+    constraints:
+      stopped_velocity_tolerance: 0.2
+      goal_time: 0.0
+      shoulder_pan_joint: { trajectory: 0.2, goal: 0.1 }
+      shoulder_lift_joint: { trajectory: 0.2, goal: 0.1 }
+      elbow_joint: { trajectory: 0.2, goal: 0.1 }
+      wrist_1_joint: { trajectory: 0.2, goal: 0.1 }
+      wrist_2_joint: { trajectory: 0.2, goal: 0.1 }
+      wrist_3_joint: { trajectory: 0.2, goal: 0.1 }

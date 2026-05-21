@@ -1,0 +1,9 @@
+# Parameters consumed by gz_ros2_control when constructing controller_manager inside Gazebo.
+#
+# IMPORTANT (ROS 2 Jazzy): Setting `defaults.node_options_args` here can crash the
+# embedded controller_manager with:
+#   InvalidParameterValueException: parameter_value_from failed for
+#   parameter 'defaults.node_options_args': No parameter value set
+#
+# So we keep this file intentionally empty of controller_manager parameters.
+

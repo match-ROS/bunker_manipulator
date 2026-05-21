@@ -1,0 +1,24 @@
+diff_drive_controller:
+  ros__parameters:
+    left_wheel_names: ["wheel1_joint", "wheel3_joint", "wheel1.2_joint", "wheel3.1_joint", "wheel3.2_joint"]
+    right_wheel_names: ["wheel2_joint", "wheel4_joint", "wheel2.2_joint", "wheel4.1_joint", "wheel4.2_joint"]
+
+    wheel_separation: 0.7
+    wheel_separation_multiplier: 1.0
+    wheel_radius: 0.072
+
+    # Flip one side if your joint signs are opposite (wheels fighting each other)
+    left_wheel_radius_multiplier: 1.0
+    right_wheel_radius_multiplier: -1.0
+
+    publish_rate: 50.0
+    cmd_vel_timeout: 0.5
+    open_loop: true
+    position_feedback: false
+
+    odom_frame_id: odom
+    base_frame_id: base_link
+    enable_odom_tf: true
+
+    use_stamped_vel: false
+    publish_limited_velocity: false

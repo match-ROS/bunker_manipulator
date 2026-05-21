@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <!-- LiDAR macro definition with parameters for flexibility -->
+  <xacro:macro name="sick_s300_gazebo" params="link topic robot_namespace tf_prefix">
+
+    <!-- LiDAR Sensor Configuration for ROS 2 -->
+    <gazebo reference="${link}">
+      <sensor name="${link}" type="gpu_lidar">
+        <gz_frame_id>${link}</gz_frame_id> <!-- Use the provided link for frame ID -->
+        <topic>${topic}</topic> <!-- Use the provided topic for the scan -->
+        <update_rate>12.5</update_rate> <!-- Retained the original update rate -->
+        <lidar>
+          <scan>
+            <horizontal>
+              <samples>541</samples> <!-- Retained the original sample count -->
+              <resolution>1</resolution> <!-- Retained the original resolution -->
+              <min_angle>-2.35619449615</min_angle> <!-- Same min angle as in the original -->
+              <max_angle>2.35619449615</max_angle> <!-- Same max angle as in the original -->
+            </horizontal>
+            <vertical>
+              <samples>1</samples> <!-- Single vertical sample (no vertical scan in the original) -->
+              <resolution>0.1</resolution> <!-- Set a small resolution for vertical scan -->
+              <min_angle>0.0</min_angle> <!-- No vertical range in original -->
+              <max_angle>0.0</max_angle> <!-- No vertical range in original -->
+            </vertical>
+          </scan>
+          <range>
+            <min>0.05</min> <!-- Retained the original min range -->
+            <max>29.0</max> <!-- Retained the original max range -->
+            <resolution>0.01</resolution>
+          </range>
+          <frame_id>${tf_prefix}${link}</frame_id> <!-- Use tf_prefix and link for frame ID -->
+        </lidar>
+        <alwaysOn>true</alwaysOn>
+        <visualize>false</visualize> <!-- Retained visualize as false -->
+      </sensor>
+    </gazebo>
+
+  </xacro:macro>
+
+</robot>

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(mur_launch_sim)
+project(controllers_ros2)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -48,23 +48,8 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
-install(PROGRAMS
-  scripts/ground_truth_from_pose_tf.py
-  scripts/jparse_simple_goal.py
-  scripts/jparse_move_action_server.py
-  scripts/laserscan_frame_republisher.py
-  scripts/lift_effort_position_controller.py
-  scripts/moveit_move_to_home.py  # Replace with the path to your Python node
-  scripts/moveit_trajectory_controller_proxy.py
-  scripts/publish_moveit_descriptions.py
-  scripts/test_forward_velocity_controller.py
-  scripts/test_jparse_velocity_controller.py
-  scripts/test_lift_controller.py
-  DESTINATION lib/${PROJECT_NAME}
-)
-
 install(DIRECTORY
-  launch rviz scripts
+  launch
   DESTINATION share/${PROJECT_NAME}
 )
 ament_package()

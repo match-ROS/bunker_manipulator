@@ -1,0 +1,6 @@
+[submodule "bunker_hardware/bunker_ros2"]
+	path = bunker_hardware/bunker_ros2
+	url = https://github.com/agilexrobotics/bunker_ros2.git
+[submodule "bunker_hardware/ugv_sdk"]
+	path = bunker_hardware/ugv_sdk
+	url = https://github.com/match-ROS/ugv_sdk.git

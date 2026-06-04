@@ -4,9 +4,12 @@ from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
     IncludeLaunchDescription,
+    RegisterEventHandler,
     SetEnvironmentVariable,
+    TimerAction,
     UnsetEnvironmentVariable,
 )
+from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, Command
 from launch_ros.actions import Node
@@ -84,21 +87,10 @@ def generate_launch_description():
         parameters=[{'robot_description': robot_description}]
     )
 
-    # Publisher für /robot_description (für ros_gz_sim create)
-    robot_description_pub_root = Node(
-        package='bunker_description',
-        executable='robot_description_publisher.py',
-        name='robot_description_publisher',
-        output='screen',
-        parameters=[{'robot_description': robot_description}]
-    )
-
-    # Removed namespaced publisher; plugin will read /robot_description directly
-
     # Kein separater ros2_control_node: wir verwenden den Controller-Manager
-    # aus dem gz_ros2_control-Plugin (erreichbar unter /controller_manager_node).
+    # aus dem gz_ros2_control-Plugin (erreichbar unter /controller_manager).
 
-    # spawn robot entity in Gazebo after 2s to ensure robot_description published
+    # Spawn from the transient-local /robot_description published by robot_state_publisher.
     spawn_entity = Node(
         package='ros_gz_sim',
         executable='create',
@@ -120,7 +112,7 @@ def generate_launch_description():
         executable='spawner',
         arguments=[
             'joint_state_broadcaster',
-            '--controller-manager', '/controller_manager_node'
+            '--controller-manager', '/controller_manager'
         ],
         output='screen'
     )
@@ -130,9 +122,51 @@ def generate_launch_description():
         executable='spawner',
         arguments=[
             'diff_drive_controller',
-            '--controller-manager', '/controller_manager_node'
+            '--controller-manager', '/controller_manager'
         ],
         output='screen'
+    )
+
+    ur_joint_trajectory_spawner = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=[
+            'ur_joint_trajectory_controller',
+            '--controller-manager', '/controller_manager'
+        ],
+        output='screen'
+    )
+
+    inactive_ur_controllers_spawner = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=[
+            'ur_scaled_joint_trajectory_controller',
+            'ur_forward_velocity_controller',
+            'ur_forward_position_controller',
+            '--controller-manager', '/controller_manager',
+            '--inactive'
+        ],
+        output='screen'
+    )
+
+    spawn_joint_state_after_robot = RegisterEventHandler(
+        OnProcessExit(
+            target_action=spawn_entity,
+            # The Gazebo plugin creates /controller_manager asynchronously after insertion.
+            on_exit=[TimerAction(period=3.0, actions=[joint_state_spawner])],
+        )
+    )
+
+    spawn_controllers_after_joint_state = RegisterEventHandler(
+        OnProcessExit(
+            target_action=joint_state_spawner,
+            on_exit=[
+                diff_drive_spawner,
+                ur_joint_trajectory_spawner,
+                inactive_ur_controllers_spawner,
+            ],
+        )
     )
 
     # Create the launch description
@@ -166,10 +200,9 @@ def generate_launch_description():
     ld.add_action(controllers_yaml_arg)
     ld.add_action(gz_sim)
     ld.add_action(robot_state_publisher)
-    ld.add_action(robot_description_pub_root)
     ld.add_action(ros_gz_bridge)
     ld.add_action(spawn_entity)
-    ld.add_action(joint_state_spawner)
-    ld.add_action(diff_drive_spawner)
+    ld.add_action(spawn_joint_state_after_robot)
+    ld.add_action(spawn_controllers_after_joint_state)
 
     return ld

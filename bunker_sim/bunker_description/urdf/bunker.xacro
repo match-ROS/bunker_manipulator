@@ -1040,8 +1040,6 @@
   <!-- Gazebo Sim integration: load gz/ign ros2_control bridge plugin -->
   <gazebo>
     <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
-  <!-- Use a unique controller manager node name so we can target parameters reliably -->
-  <controller_manager_name>controller_manager_node</controller_manager_name>
       <!-- Ensure controller_manager is created in the root namespace -->
       <ros>
         <namespace>/</namespace>

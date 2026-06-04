@@ -23,6 +23,7 @@
   <depend>xacro</depend>
   <depend>mir_description</depend>
   <depend>robot_localization</depend>
+  <exec_depend>ur_simulation_gz</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_cmake_copyright</test_depend>

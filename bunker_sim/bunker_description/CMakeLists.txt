@@ -31,7 +31,6 @@ install(DIRECTORY
 
 # Install python executables
 install(PROGRAMS
-  scripts/robot_description_publisher.py
   scripts/diff_drive_converter.py
   scripts/wheel_force_applier.py
   DESTINATION lib/${PROJECT_NAME}

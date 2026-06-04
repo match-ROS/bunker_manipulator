@@ -1064,6 +1064,31 @@
       <state_interface name="position"/>
       <state_interface name="velocity"/>
     </joint>
+    <!-- Passive track wheels need state interfaces so robot_state_publisher can publish TF. -->
+    <joint name="wheel1.1_joint">
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="wheel1.3_joint">
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="wheel2.1_joint">
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="wheel2.3_joint">
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="wheel3.3_joint">
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="wheel4.3_joint">
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
   </ros2_control>
 
   <!-- Gazebo Sim integration: load gz/ign ros2_control bridge plugin -->

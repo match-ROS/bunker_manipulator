@@ -9,6 +9,7 @@ from launch.actions import (
     TimerAction,
     UnsetEnvironmentVariable,
 )
+from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, Command
@@ -32,6 +33,11 @@ def generate_launch_description():
         'headless',
         default_value='false',
         description='Start Gazebo headless (true/false)'
+    )
+    launch_rviz_arg = DeclareLaunchArgument(
+        'launch_rviz',
+        default_value='false',
+        description='Start RViz with the BunkUR simulation configuration'
     )
 
     package_name = 'bunker_description'
@@ -84,7 +90,19 @@ def generate_launch_description():
         package='robot_state_publisher',
         executable='robot_state_publisher',
         output='screen',
-        parameters=[{'robot_description': robot_description}]
+        parameters=[{
+            'robot_description': robot_description,
+            'use_sim_time': True,
+        }]
+    )
+
+    rviz = Node(
+        package='rviz2',
+        executable='rviz2',
+        output='screen',
+        arguments=['-d', os.path.join(pkg_share, 'config', 'bunkur.rviz')],
+        parameters=[{'use_sim_time': True}],
+        condition=IfCondition(LaunchConfiguration('launch_rviz')),
     )
 
     # Kein separater ros2_control_node: wir verwenden den Controller-Manager
@@ -198,8 +216,12 @@ def generate_launch_description():
 
     # Add args and nodes
     ld.add_action(controllers_yaml_arg)
+    ld.add_action(world_arg)
+    ld.add_action(headless_arg)
+    ld.add_action(launch_rviz_arg)
     ld.add_action(gz_sim)
     ld.add_action(robot_state_publisher)
+    ld.add_action(rviz)
     ld.add_action(ros_gz_bridge)
     ld.add_action(spawn_entity)
     ld.add_action(spawn_joint_state_after_robot)

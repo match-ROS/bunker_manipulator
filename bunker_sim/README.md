@@ -37,6 +37,31 @@ source install/setup.bash
 ros2 launch bunker_description spawn_with_controllers.launch.py
 ```
 
+Start the simulation together with a working RViz configuration:
+
+```bash
+ros2 launch bunker_description spawn_with_controllers.launch.py launch_rviz:=true
+```
+
+Or start RViz in another sourced terminal after the simulation is running:
+
+```bash
+ros2 launch bunker_description view_robot.launch.py
+```
+
+When configuring RViz manually, use `base_footprint` as the Fixed Frame. For the RobotModel
+display, select `/robot_description` and set its durability policy to `Transient Local`.
+Do not add the MoveIt `MotionPlanning` display unless a matching MoveIt configuration and
+`move_group` are running; it requires the separate `robot_description_semantic` SRDF.
+
+If a ROS CLI command such as `ros2 param list` remains stuck after terminated simulations,
+restart its discovery daemon:
+
+```bash
+ros2 daemon stop
+ros2 daemon start
+```
+
 The launch starts the platform `diff_drive_controller` and the standard simulated UR
 `ur_joint_trajectory_controller`. The alternative UR controllers
 `ur_scaled_joint_trajectory_controller`, `ur_forward_velocity_controller`, and

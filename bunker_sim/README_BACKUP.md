@@ -4,7 +4,7 @@
 Um die Simulation zu starten (mit dem funktionierenden Controller-Fix):
 ```bash
 source install/setup.bash
-ros2 launch my_robot_description spawn_with_controllers.launch.py
+ros2 launch bunker_description spawn_with_controllers.launch.py
 ```
 
 ## Steuerung (Teleop)

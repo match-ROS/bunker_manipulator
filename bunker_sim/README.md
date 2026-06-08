@@ -68,6 +68,18 @@ The launch starts the platform `diff_drive_controller` and the standard simulate
 `ur_forward_position_controller` are loaded in the inactive state and can be selected with
 `ros2 control switch_controllers`.
 
+To test the UR velocity controller, switch away from the trajectory controller first:
+
+```bash
+ros2 control switch_controllers \
+  --controller-manager /controller_manager \
+  --deactivate ur_joint_trajectory_controller \
+  --activate ur_forward_velocity_controller
+
+ros2 topic pub -r 200 /ur_forward_velocity_controller/commands \
+  std_msgs/msg/Float64MultiArray "{data: [0.1, 0.0, 0.0, 0.0, 0.0, 0.0]}"
+```
+
 ## Steuerung (Teleop)
 Um den Roboter zu steuern (Fix für TwistStamped ist hier wichtig):
 ```bash

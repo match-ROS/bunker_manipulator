@@ -48,6 +48,7 @@ ur_joint_trajectory_controller:
       - ur_wrist_3_joint
     command_interfaces:
       - position
+      - velocity
     state_interfaces:
       - position
       - velocity

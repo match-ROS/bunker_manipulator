@@ -22,10 +22,24 @@
   <xacro:arg name="ur_tf_prefix" default="ur_"/>
   <xacro:arg name="ur_mount_xyz" default="0.3 0 0.05"/>
   <xacro:arg name="ur_mount_rpy" default="0 0 0"/>
+  <xacro:arg name="ur_initial_shoulder_pan_joint" default="0.1745329252"/>
+  <xacro:arg name="ur_initial_shoulder_lift_joint" default="-1.57"/>
+  <xacro:arg name="ur_initial_elbow_joint" default="1.5707963268"/>
+  <xacro:arg name="ur_initial_wrist_1_joint" default="-1.57"/>
+  <xacro:arg name="ur_initial_wrist_2_joint" default="-1.5707963268"/>
+  <xacro:arg name="ur_initial_wrist_3_joint" default="0.0"/>
   <xacro:arg name="ur_joint_limit_params" default="$(find ur_description)/config/$(arg ur_type)/joint_limits.yaml"/>
   <xacro:arg name="ur_kinematics_params" default="$(find ur_description)/config/$(arg ur_type)/default_kinematics.yaml"/>
   <xacro:arg name="ur_physical_params" default="$(find ur_description)/config/$(arg ur_type)/physical_parameters.yaml"/>
   <xacro:arg name="ur_visual_params" default="$(find ur_description)/config/$(arg ur_type)/visual_parameters.yaml"/>
+  <xacro:property name="ur_initial_positions" value="${dict(
+      shoulder_pan_joint=float('$(arg ur_initial_shoulder_pan_joint)'),
+      shoulder_lift_joint=float('$(arg ur_initial_shoulder_lift_joint)'),
+      elbow_joint=float('$(arg ur_initial_elbow_joint)'),
+      wrist_1_joint=float('$(arg ur_initial_wrist_1_joint)'),
+      wrist_2_joint=float('$(arg ur_initial_wrist_2_joint)'),
+      wrist_3_joint=float('$(arg ur_initial_wrist_3_joint)')
+    )}"/>
 
   <xacro:ur_robot
       name="$(arg ur_type)"
@@ -41,7 +55,8 @@
   <!-- Official UR Gazebo control interfaces for the arm joints. -->
   <xacro:ur_ros2_control
       name="URSimSystem"
-      tf_prefix="$(arg ur_tf_prefix)"/>
+      tf_prefix="$(arg ur_tf_prefix)"
+      initial_positions="${ur_initial_positions}"/>
 
   <link
     name="base_link">

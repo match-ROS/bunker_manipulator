@@ -56,9 +56,24 @@ def generate_launch_description():
     )
     # Use the launch config for xacro command
     controllers_yaml = LaunchConfiguration('controllers_yaml')
+    ur_initial_shoulder_pan_joint = LaunchConfiguration('ur_initial_shoulder_pan_joint')
+    ur_initial_shoulder_lift_joint = LaunchConfiguration('ur_initial_shoulder_lift_joint')
+    ur_initial_elbow_joint = LaunchConfiguration('ur_initial_elbow_joint')
+    ur_initial_wrist_1_joint = LaunchConfiguration('ur_initial_wrist_1_joint')
+    ur_initial_wrist_2_joint = LaunchConfiguration('ur_initial_wrist_2_joint')
+    ur_initial_wrist_3_joint = LaunchConfiguration('ur_initial_wrist_3_joint')
     # inject controllers yaml path into xacro so Gazebo plugin can pick it up
     robot_description = ParameterValue(
-        Command(['xacro ', urdf_file, ' controllers_yaml:=', controllers_yaml]),
+        Command([
+            'xacro ', urdf_file,
+            ' controllers_yaml:=', controllers_yaml,
+            ' ur_initial_shoulder_pan_joint:=', ur_initial_shoulder_pan_joint,
+            ' ur_initial_shoulder_lift_joint:=', ur_initial_shoulder_lift_joint,
+            ' ur_initial_elbow_joint:=', ur_initial_elbow_joint,
+            ' ur_initial_wrist_1_joint:=', ur_initial_wrist_1_joint,
+            ' ur_initial_wrist_2_joint:=', ur_initial_wrist_2_joint,
+            ' ur_initial_wrist_3_joint:=', ur_initial_wrist_3_joint,
+        ]),
         value_type=str
     )
 
@@ -216,6 +231,36 @@ def generate_launch_description():
 
     # Add args and nodes
     ld.add_action(controllers_yaml_arg)
+    ld.add_action(DeclareLaunchArgument(
+        'ur_initial_shoulder_pan_joint',
+        default_value='0.7854',
+        description='Initial UR shoulder pan joint in radians. Default is 10 degrees.'
+    ))
+    ld.add_action(DeclareLaunchArgument(
+        'ur_initial_shoulder_lift_joint',
+        default_value='-1.57',
+        description='Initial UR shoulder lift joint in radians.'
+    ))
+    ld.add_action(DeclareLaunchArgument(
+        'ur_initial_elbow_joint',
+        default_value='1.5707963268',
+        description='Initial UR elbow joint in radians. Default is 90 degrees.'
+    ))
+    ld.add_action(DeclareLaunchArgument(
+        'ur_initial_wrist_1_joint',
+        default_value='-0.0',
+        description='Initial UR wrist 1 joint in radians.'
+    ))
+    ld.add_action(DeclareLaunchArgument(
+        'ur_initial_wrist_2_joint',
+        default_value='0.7854',
+        description='Initial UR wrist 2 joint in radians. Matches the right-arm home pose.'
+    ))
+    ld.add_action(DeclareLaunchArgument(
+        'ur_initial_wrist_3_joint',
+        default_value='0.0',
+        description='Initial UR wrist 3 joint in radians.'
+    ))
     ld.add_action(world_arg)
     ld.add_action(headless_arg)
     ld.add_action(launch_rviz_arg)

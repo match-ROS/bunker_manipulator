@@ -135,8 +135,29 @@ def generate_launch_description():
     ros_gz_bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
-        arguments=['/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'],
+        arguments=[
+            '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
+            '/world/empty/dynamic_pose/info@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V',
+        ],
         output='screen'
+    )
+
+    gazebo_model_tf_publisher = Node(
+        package='bunker_description',
+        executable='gazebo_model_tf_publisher.py',
+        name='gazebo_model_tf_publisher',
+        output='screen',
+        parameters=[{
+            'use_sim_time': True,
+            'gazebo_tf_topic': '/world/empty/dynamic_pose/info',
+            'robot_pose_topic': '/robot_pose',
+            'model_name': 'bunker',
+            'world_frame': 'map',
+            'robot_base_frame': 'base_footprint',
+            'odom_frame': 'odom',
+            'publish_robot_pose': True,
+            'use_first_unnamed_pose': True,
+        }],
     )
 
     # Spawner nodes to load controllers
@@ -268,6 +289,7 @@ def generate_launch_description():
     ld.add_action(robot_state_publisher)
     ld.add_action(rviz)
     ld.add_action(ros_gz_bridge)
+    ld.add_action(gazebo_model_tf_publisher)
     ld.add_action(spawn_entity)
     ld.add_action(spawn_joint_state_after_robot)
     ld.add_action(spawn_controllers_after_joint_state)

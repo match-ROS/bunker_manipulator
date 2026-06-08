@@ -32,6 +32,7 @@ install(DIRECTORY
 # Install python executables
 install(PROGRAMS
   scripts/diff_drive_converter.py
+  scripts/gazebo_model_tf_publisher.py
   scripts/wheel_force_applier.py
   DESTINATION lib/${PROJECT_NAME}
 )

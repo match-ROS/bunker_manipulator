@@ -21,7 +21,7 @@ TCP/nozzle pose:
   - `/tf_static`
   - UR tool frame transforms
 
-## Candidate Outputs
+## Documented Outputs
 
 Base command:
 
@@ -35,6 +35,12 @@ Fallback command topic:
 - Topic: `/robot/robotnik_base_control/cmd_vel`
 - Type: `geometry_msgs/msg/TwistStamped`
 - Use only if the active controller requires stamped messages.
+
+These names and types come from Robotnik documentation. They are not runtime-verified
+with the currently installed Jazzy controller binary because
+`robotnik_base_control` crashes Gazebo on its first update. Do not add a generic AM
+remapping or pose bridge until a compatible controller remains active and publishes
+the expected odometry and TF interfaces.
 
 ## Generic Follower Parameters
 

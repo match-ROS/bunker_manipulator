@@ -35,6 +35,10 @@ From the workspace root:
 vcs import src < src/bunker_manipulator/rbvogui_ur_sim_setup/dependencies/rbvogui_simulation.jazzy.repos
 ```
 
+The manifest imports only Robotnik repositories. Use the ROS Jazzy packages for
+general dependencies such as `gz_ros2_control`; do not add a second source copy
+unless a specific upstream fix requires it.
+
 Optional UR standalone simulation reference:
 
 ```bash
@@ -46,6 +50,16 @@ Install dependencies and build:
 ```bash
 rosdep install --from-paths src --ignore-src -r -y
 colcon build --symlink-install
+source install/setup.bash
+```
+
+`robotnik_controllers` requires the message libraries from the imported
+`robotnik_interfaces` repository. For a minimal simulation build, make sure these
+packages are built before starting Gazebo:
+
+```bash
+colcon build --symlink-install --packages-up-to robotnik_controllers_msgs
+colcon build --symlink-install --packages-up-to robotnik_gazebo_ignition
 source install/setup.bash
 ```
 
@@ -72,13 +86,36 @@ ros2 launch robotnik_gazebo_ignition spawn_robot.launch.py \
   robot_id:=robot \
   robot:=rbvogui \
   robot_model:=rbvogui_plus \
-  x:=0.0 y:=0.0 z:=0.0 \
-  run_rviz:=false
+  arm_type:=ur5e \
+  x:=0.0 y:=0.0 z:=0.1 \
+  run_rviz:=false \
+  use_sim_time:=true \
+  low_performance_simulation:=true
 ```
 
-If `rbvogui_plus` does not include the desired UR variant in the imported Robotnik
-description version, use this branch only as the mobile-base simulation baseline and
-add a separate custom mobile-manipulator xacro in a later, platform-specific branch.
+The imported `rbvogui_plus` description includes the UR arm and accepts `arm_type:=ur5e`.
+
+## Runtime Validation Status
+
+Validation on ROS 2 Jazzy on June 9, 2026 established:
+
+- Gazebo creates the `rbvogui_plus` entity with the UR5e arm.
+- The base and arm hardware interfaces initialize.
+- `joint_state_broadcaster` loads and activates.
+- The released `robotnik_controllers` binary requires
+  `robotnik_controllers_msgs` to be built from the imported source.
+- After that library is available, `robotnik_base_control` loads and activates, but
+  its first update throws `std::bad_variant_access`. Controller deactivation then
+  frees an invalid pointer and terminates Gazebo.
+- Because Gazebo terminates immediately, the base command, odometry, and complete
+  UR controller/TF interfaces cannot yet be validated at runtime.
+
+The failing binary is `ros-jazzy-robotnik-controllers` version
+`1.0.0-20250407.075635-7bed613`. The upstream
+`RobotnikAutomation/robotnik_controllers` repository is referenced by Robotnik's
+interface documentation but is not anonymously accessible. A compatible controller
+binary or source checkout is therefore required before adding pose bridges or
+claiming the AM demo is operational.
 
 ## Topic Discovery Procedure
 
@@ -97,8 +134,9 @@ Expected command topics from Robotnik docs:
 - `/robot/robotnik_base_control/cmd_vel`: `geometry_msgs/msg/TwistStamped`
 - `/robot/robotnik_base_control/cmd_vel_unstamped`: `geometry_msgs/msg/Twist`
 
-The generic AM follower should start with the unstamped `Twist` command topic unless the
-active controller only accepts `TwistStamped`.
+These topic names are documented expectations, not runtime-verified interfaces while
+the released base controller crashes. The generic AM follower should start with the
+unstamped `Twist` command topic after a compatible controller is available.
 
 ## Pose Topic Contract For AM Nodes
 
@@ -113,9 +151,10 @@ Robotnik-specific pose extraction inside generic AM packages.
 
 ## Next Checks
 
-1. Verify whether `rbvogui_plus` includes the UR arm required for the print-path demo.
-2. Record the exact base pose topic or TF chain from the running simulator.
-3. Record the exact TCP/nozzle pose topic or TF chain from the running simulator.
-4. Confirm whether lateral velocity is accepted on the unstamped `Twist` command topic.
-5. Add only the minimal platform bridge nodes needed to publish `/robot_pose` and
+1. Obtain or build a Jazzy-compatible `robotnik_controllers` implementation.
+2. Confirm that all three controllers remain active.
+3. Record the exact base odometry topic and TF chain.
+4. Record the exact TCP/nozzle TF chain.
+5. Confirm lateral velocity on the unstamped `Twist` command topic.
+6. Add only the minimal platform bridge nodes needed to publish `/robot_pose` and
    `/current_tcp_pose` for generic AM consumers.

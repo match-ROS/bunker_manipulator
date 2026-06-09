@@ -91,6 +91,8 @@ MoveIt:
    - `robot_pose_topic: /robot_pose`
 3. Use existing `current_pose_from_tf` for `/current_tcp_pose` if TF is reliable.
 4. Add only platform-side launch/config overlays in `bunker_manipulator` for Bunker defaults.
+   First-pass files now live in `bunker_description/config/bunker_simple_base_follower.yaml`
+   and `bunker_description/launch/bunker_path_following_demo.launch.py`.
 5. Do not port ROS 1 MiR follower complexity until the simple follower fails a documented test.
 
 ## Runtime Inspection Checklist
@@ -118,7 +120,9 @@ Record:
 
 ## Useful Future Placeholders
 
-Add these only once the runtime inspection is complete:
+Runtime inspection still needs to confirm the exact base command topic. The first-pass
+simple follower overlay exists and should be adjusted if the running controller uses
+a different command topic/type:
 
 - `bunker_description/config/bunker_simple_base_follower.yaml`
 - `bunker_description/launch/bunker_path_following_demo.launch.py`

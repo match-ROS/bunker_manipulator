@@ -25,11 +25,14 @@ configuration disables lateral velocity:
 - `output_stamped: false`
 - `cmd_vel_topic: /diff_drive_controller/cmd_vel_unstamped`
 - `robot_pose_topic: /robot_pose`
+- `path_frame: map`
+- `publish_once: true`
 
-The command topic matches the current `diff_drive_controller.yaml` setting
-`use_stamped_vel: false`. If runtime inspection shows the controller subscribes to
-`/diff_drive_controller/cmd_vel` instead, override `cmd_vel_topic` and set
-`output_stamped:=true` only when the topic type is `geometry_msgs/msg/TwistStamped`.
+The command topic matches the default `spawn_with_controllers.launch.py` controller
+file, `test_controllers.yaml`, where `use_stamped_vel: false` is set explicitly. If
+runtime inspection shows the controller subscribes to `/diff_drive_controller/cmd_vel`
+instead, override `cmd_vel_topic` and set `output_stamped:=true` only when the topic
+type is `geometry_msgs/msg/TwistStamped`.
 
 ## Run
 
@@ -51,6 +54,13 @@ Or let the demo include the simulator:
 ros2 launch bunker_description bunker_path_following_demo.launch.py launch_sim:=true
 ```
 
+If the simulator pose frame changes, keep the path in the same frame:
+
+```bash
+ros2 launch bunker_description bunker_path_following_demo.launch.py \
+  path_frame:=<pose_frame>
+```
+
 ## Runtime Checks
 
 Before allowing the robot to move, confirm the controller and topic contracts:
@@ -68,6 +78,7 @@ Expected first-pass behavior:
 - the active base command topic accepts `geometry_msgs/msg/Twist`;
 - published commands have `linear.y == 0.0`;
 - the default path is a short straight line in `map`.
+- the fixed path is published once with transient-local QoS.
 
 Keep more complex paths for later tests, after the base command topic and TF frames
 are confirmed in the running simulation.

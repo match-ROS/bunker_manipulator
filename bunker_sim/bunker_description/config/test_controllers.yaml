@@ -31,11 +31,13 @@ diff_drive_controller:
     left_wheel_radius_multiplier: 1.0
     right_wheel_radius_multiplier: 1.0
     publish_rate: 50.0
+    cmd_vel_timeout: 0.5
     odom_frame_id: odom
     base_frame_id: base_footprint
     pose_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.03]
     open_loop: false
     enable_odom_tf: true
+    use_stamped_vel: false
 
 ur_joint_trajectory_controller:
   ros__parameters:

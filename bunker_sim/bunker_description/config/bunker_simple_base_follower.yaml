@@ -5,7 +5,7 @@ test_path_generator:
     normal_topic: /bunker_path_normal
     frame_id: map
     path_type: line
-    publish_once: false
+    publish_once: true
     publish_rate: 1.0
     num_points: 40
     time_step: 0.1

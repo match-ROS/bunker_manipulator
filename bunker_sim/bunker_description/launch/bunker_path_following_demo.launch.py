@@ -42,6 +42,7 @@ def generate_launch_description():
             LaunchConfiguration('config_file'),
             {
                 'use_sim_time': LaunchConfiguration('use_sim_time'),
+                'frame_id': LaunchConfiguration('path_frame'),
                 'path_topic': LaunchConfiguration('path_topic'),
                 'path_type': LaunchConfiguration('path_type'),
             },
@@ -71,6 +72,7 @@ def generate_launch_description():
         DeclareLaunchArgument('launch_sim', default_value='false'),
         DeclareLaunchArgument('launch_rviz', default_value='false'),
         DeclareLaunchArgument('path_type', default_value='line'),
+        DeclareLaunchArgument('path_frame', default_value='map'),
         DeclareLaunchArgument('path_topic', default_value='/bunker_base_path'),
         DeclareLaunchArgument('robot_pose_topic', default_value='/robot_pose'),
         DeclareLaunchArgument('cmd_vel_topic', default_value='/diff_drive_controller/cmd_vel_unstamped'),

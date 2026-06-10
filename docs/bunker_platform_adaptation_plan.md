@@ -22,13 +22,15 @@ Base controller:
 
 - Controller: `diff_drive_controller`
 - Config examples:
+  - `bunker_description/config/test_controllers.yaml` (used by
+    `spawn_with_controllers.launch.py` by default)
   - `bunker_description/config/bunker_controllers.yaml`
   - `bunker_description/config/diff_drive_controller.yaml`
 - Current interface is differential-drive, not omnidirectional.
-- `diff_drive_controller.yaml` sets `use_stamped_vel: false`.
-- Expected command topic should be confirmed at runtime, but likely one of:
-  - `/diff_drive_controller/cmd_vel`
-  - `/diff_drive_controller/cmd_vel_unstamped`
+- The default launch controller config sets `use_stamped_vel: false`, so the
+  first-pass command topic is `/diff_drive_controller/cmd_vel_unstamped`.
+- Runtime inspection should still confirm the active topic and message type before
+  commanding motion.
 
 UR arm control:
 
@@ -46,7 +48,8 @@ UR arm control:
 Base command contract:
 
 - Confirm exact active command topic and type for `diff_drive_controller`.
-- Confirm whether the controller accepts unstamped `geometry_msgs/msg/Twist`.
+- Confirm the controller accepts unstamped `geometry_msgs/msg/Twist` on
+  `/diff_drive_controller/cmd_vel_unstamped`.
 - Confirm Bunker cannot use lateral `linear.y`; generic follower must disable or ignore y velocity
   for this platform.
 
@@ -87,7 +90,8 @@ MoveIt:
 2. Configure `base_trajectory_follower/simple_base_follower` for Bunker with:
    - `max_vy: 0.0`
    - `allow_reverse` decided by controller behavior
-   - Bunker command topic from runtime inspection
+   - Bunker command topic from runtime inspection, expected first as
+     `/diff_drive_controller/cmd_vel_unstamped`
    - `robot_pose_topic: /robot_pose`
 3. Use existing `current_pose_from_tf` for `/current_tcp_pose` if TF is reliable.
 4. Add only platform-side launch/config overlays in `bunker_manipulator` for Bunker defaults.
@@ -104,8 +108,8 @@ ros2 launch bunker_description spawn_with_controllers.launch.py
 ros2 control list_controllers --controller-manager /controller_manager
 ros2 topic list | sort
 ros2 topic info /robot_pose -v
-ros2 topic info /diff_drive_controller/cmd_vel -v
 ros2 topic info /diff_drive_controller/cmd_vel_unstamped -v
+ros2 topic info /diff_drive_controller/cmd_vel -v
 ros2 run tf2_ros tf2_echo map base_footprint
 ros2 run tf2_ros tf2_echo map ur_tool0
 ```

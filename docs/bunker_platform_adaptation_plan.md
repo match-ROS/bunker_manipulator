@@ -27,10 +27,11 @@ Base controller:
   - `bunker_description/config/bunker_controllers.yaml`
   - `bunker_description/config/diff_drive_controller.yaml`
 - Current interface is differential-drive, not omnidirectional.
-- The default launch controller config sets `use_stamped_vel: false`, so the
-  first-pass command topic is `/diff_drive_controller/cmd_vel_unstamped`.
-- Runtime inspection should still confirm the active topic and message type before
-  commanding motion.
+- Runtime validation on ROS 2 Jazzy showed the active controller subscribes to
+  `geometry_msgs/msg/TwistStamped` on `/diff_drive_controller/cmd_vel`.
+- The full default Bunker demo moved along the 1 m line path, reached about
+  `/robot_pose.x=0.94`, reported `goal reached`, and returned the command topic
+  to zero.
 
 UR arm control:
 
@@ -47,29 +48,28 @@ UR arm control:
 
 Base command contract:
 
-- Confirm exact active command topic and type for `diff_drive_controller`.
-- Confirm the controller accepts unstamped `geometry_msgs/msg/Twist` on
-  `/diff_drive_controller/cmd_vel_unstamped`.
+- Active command topic: `/diff_drive_controller/cmd_vel`.
+- Type: `geometry_msgs/msg/TwistStamped`.
 - Confirm Bunker cannot use lateral `linear.y`; generic follower must disable or ignore y velocity
   for this platform.
 
 Base pose contract:
 
 - `/robot_pose` exists by design through `gazebo_model_tf_publisher`.
-- Confirm frame ID is `map`.
-- Confirm z and roll/pitch behavior are harmless for planar base following.
-- Confirm TF frame names:
+- Runtime-validated frame ID is `map`.
+- Runtime-validated pose height is about `z=0.35`; the simple planar follower uses
+  x/y/yaw only.
+- Runtime-validated TF frame names:
   - `map`
   - `odom`
-  - `base_link`
   - `base_footprint`
 
 TCP/nozzle pose contract:
 
-- Identify exact UR tool frame from TF, likely `ur_tool0` or equivalent.
+- Exact UR tool frame from TF is `ur_tool0`.
 - Decide whether AM demos should consume `/current_tcp_pose` from
   `ur_trajectory_follower/current_pose_from_tf` or a platform-side publisher.
-- Confirm frame alignment with `map` before comparing to AM reference paths.
+- TF resolves `map -> ur_tool0`.
 
 Controller switching:
 
@@ -90,8 +90,8 @@ MoveIt:
 2. Configure `base_trajectory_follower/simple_base_follower` for Bunker with:
    - `max_vy: 0.0`
    - `allow_reverse` decided by controller behavior
-   - Bunker command topic from runtime inspection, expected first as
-     `/diff_drive_controller/cmd_vel_unstamped`
+   - Bunker command topic `/diff_drive_controller/cmd_vel`
+   - `output_stamped: true`
    - `robot_pose_topic: /robot_pose`
 3. Use existing `current_pose_from_tf` for `/current_tcp_pose` if TF is reliable.
 4. Add only platform-side launch/config overlays in `bunker_manipulator` for Bunker defaults.
@@ -108,7 +108,6 @@ ros2 launch bunker_description spawn_with_controllers.launch.py
 ros2 control list_controllers --controller-manager /controller_manager
 ros2 topic list | sort
 ros2 topic info /robot_pose -v
-ros2 topic info /diff_drive_controller/cmd_vel_unstamped -v
 ros2 topic info /diff_drive_controller/cmd_vel -v
 ros2 run tf2_ros tf2_echo map base_footprint
 ros2 run tf2_ros tf2_echo map ur_tool0
@@ -116,7 +115,8 @@ ros2 run tf2_ros tf2_echo map ur_tool0
 
 Record:
 
-- base command topic and message type
+- base command topic and message type, currently validated as
+  `/diff_drive_controller/cmd_vel` with `geometry_msgs/msg/TwistStamped`
 - whether `linear.y` is ignored or rejected
 - exact TCP/tool frame
 - exact base frame for Bunker follower config
@@ -124,9 +124,8 @@ Record:
 
 ## Useful Future Placeholders
 
-Runtime inspection still needs to confirm the exact base command topic. The first-pass
-simple follower overlay exists and should be adjusted if the running controller uses
-a different command topic/type:
+The first-pass simple follower overlay exists and should be adjusted if the running
+controller changes topic/type:
 
 - `bunker_description/config/bunker_simple_base_follower.yaml`
 - `bunker_description/launch/bunker_path_following_demo.launch.py`

@@ -18,9 +18,9 @@ simple_base_follower:
     path_topic: /bunker_base_path
     robot_pose_topic: /robot_pose
     robot_pose_type: pose_stamped
-    cmd_vel_topic: /diff_drive_controller/cmd_vel_unstamped
-    output_stamped: false
-    command_frame_id: base_link
+    cmd_vel_topic: /diff_drive_controller/cmd_vel
+    output_stamped: true
+    command_frame_id: base_footprint
     publish_rate: 20.0
     lookahead_distance: 0.35
     stale_pose_timeout: 0.5

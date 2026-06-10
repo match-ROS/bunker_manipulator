@@ -22,17 +22,20 @@ configuration disables lateral velocity:
 
 - `max_vy: 0.0`
 - `kp_y: 0.0`
-- `output_stamped: false`
-- `cmd_vel_topic: /diff_drive_controller/cmd_vel_unstamped`
+- `output_stamped: true`
+- `cmd_vel_topic: /diff_drive_controller/cmd_vel`
 - `robot_pose_topic: /robot_pose`
 - `path_frame: map`
 - `publish_once: true`
 
-The command topic matches the default `spawn_with_controllers.launch.py` controller
-file, `test_controllers.yaml`, where `use_stamped_vel: false` is set explicitly. If
-runtime inspection shows the controller subscribes to `/diff_drive_controller/cmd_vel`
-instead, override `cmd_vel_topic` and set `output_stamped:=true` only when the topic
-type is `geometry_msgs/msg/TwistStamped`.
+Runtime validation showed that the current Jazzy `diff_drive_controller` subscribes
+to `geometry_msgs/msg/TwistStamped` on `/diff_drive_controller/cmd_vel`. A short
+stamped command moved `/robot_pose.x` from about `-0.0008` to `0.3427`.
+
+The full default demo was also validated: the 1 m line path published on
+`/bunker_base_path` in frame `map`, the follower reported `goal reached`,
+`/robot_pose.x` reached about `0.94`, and `/diff_drive_controller/cmd_vel` returned
+to a zero `TwistStamped`.
 
 ## Run
 
@@ -68,17 +71,17 @@ Before allowing the robot to move, confirm the controller and topic contracts:
 ```bash
 ros2 control list_controllers --controller-manager /controller_manager
 ros2 topic info /robot_pose -v
-ros2 topic info /diff_drive_controller/cmd_vel_unstamped -v
+ros2 topic info /diff_drive_controller/cmd_vel -v
 ros2 topic echo /bunker_base_path --once
 ```
 
 Expected first-pass behavior:
 
 - `/robot_pose` is `geometry_msgs/msg/PoseStamped`;
-- the active base command topic accepts `geometry_msgs/msg/Twist`;
+- the active base command topic accepts `geometry_msgs/msg/TwistStamped`;
 - published commands have `linear.y == 0.0`;
 - the default path is a short straight line in `map`.
 - the fixed path is published once with transient-local QoS.
 
-Keep more complex paths for later tests, after the base command topic and TF frames
-are confirmed in the running simulation.
+Keep more complex paths for later tests, after the straight-line baseline remains
+stable across repeated runs.

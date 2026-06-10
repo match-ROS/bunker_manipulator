@@ -37,7 +37,6 @@ diff_drive_controller:
     pose_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.03]
     open_loop: false
     enable_odom_tf: true
-    use_stamped_vel: false
 
 ur_joint_trajectory_controller:
   ros__parameters:

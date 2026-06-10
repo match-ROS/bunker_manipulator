@@ -43,6 +43,12 @@ Start the simulation together with a working RViz configuration:
 ros2 launch bunker_description spawn_with_controllers.launch.py launch_rviz:=true
 ```
 
+Run server-only Gazebo for runtime checks:
+
+```bash
+ros2 launch bunker_description spawn_with_controllers.launch.py headless:=true
+```
+
 Or start RViz in another sourced terminal after the simulation is running:
 
 ```bash
@@ -81,17 +87,16 @@ ros2 topic pub -r 200 /ur_forward_velocity_controller/commands \
 ```
 
 ## Steuerung (Teleop)
-The default `spawn_with_controllers.launch.py` controller config sets
-`use_stamped_vel: false`, so the diff-drive controller accepts unstamped
-`geometry_msgs/msg/Twist` on `/diff_drive_controller/cmd_vel_unstamped`:
+Runtime validation showed that the current Jazzy `diff_drive_controller` subscribes
+to stamped `geometry_msgs/msg/TwistStamped` on `/diff_drive_controller/cmd_vel`:
 
 ```bash
 ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args \
-  --remap cmd_vel:=/diff_drive_controller/cmd_vel_unstamped \
-  --param stamped:=false
+  --remap cmd_vel:=/diff_drive_controller/cmd_vel \
+  --param stamped:=true
 ```
 
 ## Notizen
 - Der `controller_manager` ist unter `/controller_manager` erreichbar.
-- Der Standard-Launch verwendet unstamped `Twist` Nachrichten.
+- Der Standard-Launch verwendet stamped `TwistStamped` Nachrichten.
 - Lenken funktioniert aktuell noch nicht 100%ig (TODO).

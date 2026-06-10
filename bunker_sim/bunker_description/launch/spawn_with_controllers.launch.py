@@ -4,6 +4,7 @@ from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
     IncludeLaunchDescription,
+    OpaqueFunction,
     RegisterEventHandler,
     SetEnvironmentVariable,
     TimerAction,
@@ -20,6 +21,25 @@ from launch_ros.parameter_descriptions import ParameterValue
 def prepend_env_paths(variable_name, paths):
     existing_paths = os.environ.get(variable_name, '').split(os.pathsep)
     return os.pathsep.join(dict.fromkeys(path for path in [*paths, *existing_paths] if path))
+
+
+def launch_gazebo(context, *args, **kwargs):
+    world = LaunchConfiguration('world').perform(context)
+    headless = LaunchConfiguration('headless').perform(context).strip().lower()
+    server_only = headless in {'1', 'true', 'yes', 'on'}
+    gz_args = f"-r {'-s ' if server_only else ''}{world}"
+    return [
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                os.path.join(
+                    get_package_share_directory('ros_gz_sim'),
+                    'launch',
+                    'gz_sim.launch.py',
+                )
+            ),
+            launch_arguments={'gz_args': gz_args}.items(),
+        )
+    ]
 
 
 def generate_launch_description():
@@ -91,14 +111,6 @@ def generate_launch_description():
     gz_system_plugin_path = prepend_env_paths(
         'GZ_SIM_SYSTEM_PLUGIN_PATH',
         [gz_ros2_control_lib],
-    )
-
-    # Launch Gazebo Sim
-    gz_sim = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')
-        ),
-        launch_arguments={'gz_args': '-r empty.sdf'}.items()
     )
 
     robot_state_publisher = Node(
@@ -285,7 +297,7 @@ def generate_launch_description():
     ld.add_action(world_arg)
     ld.add_action(headless_arg)
     ld.add_action(launch_rviz_arg)
-    ld.add_action(gz_sim)
+    ld.add_action(OpaqueFunction(function=launch_gazebo))
     ld.add_action(robot_state_publisher)
     ld.add_action(rviz)
     ld.add_action(ros_gz_bridge)

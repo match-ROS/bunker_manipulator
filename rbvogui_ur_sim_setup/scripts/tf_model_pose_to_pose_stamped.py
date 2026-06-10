@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
+from copy import deepcopy
 from typing import Optional
 
 import rclpy
 from geometry_msgs.msg import PoseStamped
 from rclpy.node import Node
+from tf2_ros import TransformBroadcaster
 from tf2_msgs.msg import TFMessage
 
 
@@ -17,16 +19,23 @@ class TfModelPoseToPoseStamped(Node):
         self.declare_parameter('model_frame', 'robot')
         self.declare_parameter('world_frame', 'robotnik_simple')
         self.declare_parameter('fallback_transform_index', 0)
+        self.declare_parameter('publish_tf', False)
+        self.declare_parameter('tf_child_frame', '')
 
         self.model_frame = str(self.get_parameter('model_frame').value)
         self.world_frame = str(self.get_parameter('world_frame').value)
         self.fallback_transform_index = int(
             self.get_parameter('fallback_transform_index').value
         )
+        self.publish_tf = bool(self.get_parameter('publish_tf').value)
+        self.tf_child_frame = str(self.get_parameter('tf_child_frame').value)
         input_topic = str(self.get_parameter('input_topic').value)
         output_topic = str(self.get_parameter('output_topic').value)
 
         self.publisher = self.create_publisher(PoseStamped, output_topic, 10)
+        self.tf_broadcaster = (
+            TransformBroadcaster(self) if self.publish_tf else None
+        )
         self.create_subscription(TFMessage, input_topic, self._tf_cb, 10)
 
         self.get_logger().info(
@@ -48,6 +57,15 @@ class TfModelPoseToPoseStamped(Node):
         pose.pose.position.z = transform.transform.translation.z
         pose.pose.orientation = transform.transform.rotation
         self.publisher.publish(pose)
+
+        if self.tf_broadcaster is not None:
+            tf_transform = deepcopy(transform)
+            tf_transform.header.stamp = self.get_clock().now().to_msg()
+            if not tf_transform.header.frame_id:
+                tf_transform.header.frame_id = self.world_frame
+            if self.tf_child_frame:
+                tf_transform.child_frame_id = self.tf_child_frame
+            self.tf_broadcaster.sendTransform(tf_transform)
 
     def _find_model_transform(self, msg: TFMessage):
         for transform in msg.transforms:

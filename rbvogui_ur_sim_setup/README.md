@@ -80,6 +80,7 @@ starts standard Jazzy joint-group controllers and a small platform-side swerve n
 
 - `/robot/robotnik_base_control/cmd_vel_unstamped`: `geometry_msgs/msg/Twist`
 - `/robot_pose`: `geometry_msgs/msg/PoseStamped`
+- `/current_tcp_pose`: `geometry_msgs/msg/PoseStamped`
 - `/robot/steering_position_controller/commands`: steering joint position commands
 - `/robot/wheel_velocity_controller/commands`: wheel joint velocity commands
 - `/robot/joint_trajectory_controller`: UR arm trajectory controller
@@ -151,6 +152,10 @@ The local standard-controller launch was validated as a workaround:
   `/world/robotnik_simple/dynamic_pose/info` stream. A later validation run moved
   `/robot_pose` from near `(0.0, 0.0)` to about `(0.285, 0.165)` after a short
   x/y command.
+- The same Gazebo model-pose stream publishes the TF root
+  `robotnik_simple -> robot_base_footprint`, which allows the generic
+  `current_pose_from_tf` node to publish `/current_tcp_pose` for
+  `robot_arm_tool0`.
 
 The Gazebo `Pose_V -> TFMessage` bridge does not preserve entity names in this
 environment. The local pose publisher therefore uses transform index `0`, which was
@@ -164,6 +169,7 @@ After the simulator starts:
 ros2 topic list | sort
 ros2 topic info /robot/robotnik_base_control/cmd_vel_unstamped -v
 ros2 topic echo /robot_pose --once
+ros2 topic echo /current_tcp_pose --once
 ros2 control list_controllers --controller-manager /robot/controller_manager
 ros2 topic list | grep -E 'pose|odom|tf|joint|tool|tcp'
 gz topic -e -t /world/robotnik_simple/dynamic_pose/info --json-output | grep '"name":"robot"'
@@ -188,10 +194,13 @@ The AM application packages expect external pose topics:
 The validated model pose source is the Gazebo topic
 `/world/robotnik_simple/dynamic_pose/info`. The launch bridges it through
 `ros_gz_bridge` and publishes `/robot_pose` as `geometry_msgs/msg/PoseStamped`.
+The same source is also broadcast as the TF transform
+`robotnik_simple -> robot_base_footprint`, so `/current_tcp_pose` can be resolved
+from the ROS robot-state TF tree to `robot_arm_tool0`.
 Do not put Robotnik-specific pose extraction inside generic AM packages.
 
 ## Next Checks
 
-1. Record the exact TCP/nozzle TF chain.
-2. Add only the minimal platform bridge node needed to publish `/current_tcp_pose`
-   for generic AM consumers.
+1. Validate the TCP pose while executing an arm trajectory.
+2. Decide whether later AM launches should consume `/current_tcp_pose` directly or
+   remap it through scenario-specific topic names.

@@ -87,6 +87,22 @@ def generate_launch_description() -> LaunchDescription:
             'model_frame': robot_id,
             'world_frame': 'robotnik_simple',
             'fallback_transform_index': 0,
+            'publish_tf': True,
+            'tf_child_frame': [robot_id, '_base_footprint'],
+        }],
+    )
+
+    tcp_pose_publisher = Node(
+        package='ur_trajectory_follower',
+        executable='current_pose_from_tf',
+        name='rbvogui_current_tcp_pose_publisher',
+        output='screen',
+        parameters=[{
+            'use_sim_time': use_sim_time,
+            'target_frame': 'robotnik_simple',
+            'source_frame': [robot_id, '_arm_tool0'],
+            'pose_topic': '/current_tcp_pose',
+            'publish_rate': 20.0,
         }],
     )
 
@@ -141,5 +157,6 @@ def generate_launch_description() -> LaunchDescription:
         TimerAction(period=3.0, actions=[model_pose_bridge]),
         TimerAction(period=3.5, actions=[robot_pose_publisher]),
         TimerAction(period=4.0, actions=[controller_spawner]),
+        TimerAction(period=7.0, actions=[tcp_pose_publisher]),
         TimerAction(period=8.0, actions=[swerve_controller]),
     ])

@@ -17,10 +17,12 @@ Base pose:
 TCP/nozzle pose:
 
 - Preferred AM topic: `/current_tcp_pose`
-- Candidate Robotnik/UR sources to inspect:
-  - `/tf`
-  - `/tf_static`
-  - UR tool frame transforms
+- Type: `geometry_msgs/msg/PoseStamped`
+- Source in the validated launch: ROS TF lookup from `robotnik_simple` to
+  `robot_arm_tool0`
+- Root transform source: Gazebo `/world/robotnik_simple/dynamic_pose/info`,
+  bridged and broadcast by `rbvogui_ur_sim_setup`
+- Frame ID: `robotnik_simple`
 
 ## Documented Outputs
 

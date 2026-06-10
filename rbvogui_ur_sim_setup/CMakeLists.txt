@@ -14,6 +14,7 @@ install(DIRECTORY
 
 install(PROGRAMS
   scripts/rbvogui_swerve_controller.py
+  scripts/tf_model_pose_to_pose_stamped.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

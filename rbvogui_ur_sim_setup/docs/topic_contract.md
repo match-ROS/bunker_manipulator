@@ -8,10 +8,11 @@ not hardcoded topic names.
 Base pose:
 
 - Preferred AM topic: `/robot_pose`
-- Candidate Robotnik sources to inspect:
-  - `/robot/odom`
-  - `/tf`
-  - `/tf_static`
+- Type: `geometry_msgs/msg/PoseStamped`
+- Source in the validated launch: Gazebo
+  `/world/robotnik_simple/dynamic_pose/info`, bridged to ROS and filtered in
+  `rbvogui_ur_sim_setup`.
+- Frame ID: `robotnik_simple`
 
 TCP/nozzle pose:
 

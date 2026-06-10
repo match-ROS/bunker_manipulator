@@ -63,6 +63,33 @@ def generate_launch_description() -> LaunchDescription:
         output='screen',
     )
 
+    model_pose_bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        arguments=[
+            [
+                '/world/robotnik_simple/dynamic_pose/info'
+                '@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V',
+            ],
+        ],
+        output='screen',
+    )
+
+    robot_pose_publisher = Node(
+        package='rbvogui_ur_sim_setup',
+        executable='tf_model_pose_to_pose_stamped.py',
+        name='rbvogui_robot_pose_publisher',
+        output='screen',
+        parameters=[{
+            'use_sim_time': use_sim_time,
+            'input_topic': '/world/robotnik_simple/dynamic_pose/info',
+            'output_topic': '/robot_pose',
+            'model_frame': robot_id,
+            'world_frame': 'robotnik_simple',
+            'fallback_transform_index': 0,
+        }],
+    )
+
     controller_spawner = Node(
         package='controller_manager',
         executable='spawner',
@@ -111,6 +138,8 @@ def generate_launch_description() -> LaunchDescription:
         world,
         robot_description,
         TimerAction(period=2.0, actions=[create_robot]),
+        TimerAction(period=3.0, actions=[model_pose_bridge]),
+        TimerAction(period=3.5, actions=[robot_pose_publisher]),
         TimerAction(period=4.0, actions=[controller_spawner]),
         TimerAction(period=8.0, actions=[swerve_controller]),
     ])

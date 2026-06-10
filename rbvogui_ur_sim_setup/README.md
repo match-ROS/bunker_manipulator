@@ -79,6 +79,7 @@ it does not load the released `robotnik_controllers` base controller. Instead it
 starts standard Jazzy joint-group controllers and a small platform-side swerve node:
 
 - `/robot/robotnik_base_control/cmd_vel_unstamped`: `geometry_msgs/msg/Twist`
+- `/robot_pose`: `geometry_msgs/msg/PoseStamped`
 - `/robot/steering_position_controller/commands`: steering joint position commands
 - `/robot/wheel_velocity_controller/commands`: wheel joint velocity commands
 - `/robot/joint_trajectory_controller`: UR arm trajectory controller
@@ -146,6 +147,14 @@ The local standard-controller launch was validated as a workaround:
   `linear.x=0.15` and `linear.y=0.10` moved the Gazebo model pose from near
   `(0.0, 0.0)` to about `(0.375, 0.225)`.
 - Steering joints settled near `0.588 rad`, matching `atan2(0.10, 0.15)`.
+- `/robot_pose` publishes `geometry_msgs/msg/PoseStamped` from Gazebo's
+  `/world/robotnik_simple/dynamic_pose/info` stream. A later validation run moved
+  `/robot_pose` from near `(0.0, 0.0)` to about `(0.285, 0.165)` after a short
+  x/y command.
+
+The Gazebo `Pose_V -> TFMessage` bridge does not preserve entity names in this
+environment. The local pose publisher therefore uses transform index `0`, which was
+verified to be the `robot` model pose in `/world/robotnik_simple/dynamic_pose/info`.
 
 ## Topic Discovery Procedure
 
@@ -154,9 +163,10 @@ After the simulator starts:
 ```bash
 ros2 topic list | sort
 ros2 topic info /robot/robotnik_base_control/cmd_vel_unstamped -v
+ros2 topic echo /robot_pose --once
 ros2 control list_controllers --controller-manager /robot/controller_manager
 ros2 topic list | grep -E 'pose|odom|tf|joint|tool|tcp'
-gz topic -e -t /model/robot/pose --json-output | grep '"name":"robot"'
+gz topic -e -t /world/robotnik_simple/dynamic_pose/info --json-output | grep '"name":"robot"'
 ```
 
 Expected command topics from Robotnik docs:
@@ -175,14 +185,13 @@ The AM application packages expect external pose topics:
 - Base pose: `geometry_msgs/msg/PoseStamped`, example `/robot_pose`
 - TCP/nozzle pose: `geometry_msgs/msg/PoseStamped`, example `/current_tcp_pose`
 
-The validated model pose source is the Gazebo topic `/model/robot/pose`. It emits
-Gazebo pose messages, not `geometry_msgs/msg/PoseStamped`, so add a platform-side
-bridge/publisher if generic AM nodes need `/robot_pose`. Do not put Robotnik-specific
-pose extraction inside generic AM packages.
+The validated model pose source is the Gazebo topic
+`/world/robotnik_simple/dynamic_pose/info`. The launch bridges it through
+`ros_gz_bridge` and publishes `/robot_pose` as `geometry_msgs/msg/PoseStamped`.
+Do not put Robotnik-specific pose extraction inside generic AM packages.
 
 ## Next Checks
 
-1. Add a platform-side bridge for `/model/robot/pose` to publish `/robot_pose`.
-2. Record the exact TCP/nozzle TF chain.
-3. Add only the minimal platform bridge nodes needed to publish `/robot_pose` and
-   `/current_tcp_pose` for generic AM consumers.
+1. Record the exact TCP/nozzle TF chain.
+2. Add only the minimal platform bridge node needed to publish `/current_tcp_pose`
+   for generic AM consumers.

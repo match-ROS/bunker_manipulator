@@ -36,11 +36,14 @@ Fallback command topic:
 - Type: `geometry_msgs/msg/TwistStamped`
 - Use only if the active controller requires stamped messages.
 
-These names and types come from Robotnik documentation. They are not runtime-verified
-with the currently installed Jazzy controller binary because
-`robotnik_base_control` crashes Gazebo on its first update. Do not add a generic AM
-remapping or pose bridge until a compatible controller remains active and publishes
-the expected odometry and TF interfaces.
+The unstamped command topic is runtime-verified with
+`rbvogui_ur_standard_control.launch.py`. That launch keeps Robotnik's documented topic
+name as the public platform command input, then converts it to standard steering and
+wheel joint-group controller commands inside `rbvogui_ur_sim_setup`.
+
+Robotnik's released Jazzy base controller still crashes Gazebo on its first update.
+Use the local standard-controller launch unless a compatible Robotnik controller
+binary or source checkout is available.
 
 ## Generic Follower Parameters
 

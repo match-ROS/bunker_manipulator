@@ -68,6 +68,24 @@ The Robotnik README also describes installing its prebuilt debs from
 
 ## Start Robotnik Simulation
 
+Recommended validated flow:
+
+```bash
+ros2 launch rbvogui_ur_sim_setup rbvogui_ur_standard_control.launch.py gui:=false
+```
+
+This launch uses Robotnik's public RB-VOGUI body/wheel meshes and UR arm macros, but
+it does not load the released `robotnik_controllers` base controller. Instead it
+starts standard Jazzy joint-group controllers and a small platform-side swerve node:
+
+- `/robot/robotnik_base_control/cmd_vel_unstamped`: `geometry_msgs/msg/Twist`
+- `/robot/steering_position_controller/commands`: steering joint position commands
+- `/robot/wheel_velocity_controller/commands`: wheel joint velocity commands
+- `/robot/joint_trajectory_controller`: UR arm trajectory controller
+
+The swerve node is intentionally platform-specific and lives in this setup package,
+not in `match_additive_manufacturing_ros2`.
+
 Complete bringup:
 
 ```bash
@@ -77,7 +95,7 @@ ros2 launch robotnik_simulation_bringup bringup_complete.launch.py \
   use_rviz:=false
 ```
 
-Manual empty-world flow:
+Robotnik upstream empty-world flow:
 
 ```bash
 ros2 launch robotnik_gazebo_ignition spawn_world.launch.py world:=empty gui:=true
@@ -93,11 +111,12 @@ ros2 launch robotnik_gazebo_ignition spawn_robot.launch.py \
   low_performance_simulation:=true
 ```
 
-The imported `rbvogui_plus` description includes the UR arm and accepts `arm_type:=ur5e`.
+The imported `rbvogui_plus` description includes the UR arm and accepts `arm_type:=ur5e`,
+but the upstream flow currently hits the controller issue recorded below.
 
 ## Runtime Validation Status
 
-Validation on ROS 2 Jazzy on June 9, 2026 established:
+Validation on ROS 2 Jazzy on June 10, 2026 established:
 
 - Gazebo creates the `rbvogui_plus` entity with the UR5e arm.
 - The base and arm hardware interfaces initialize.
@@ -114,8 +133,19 @@ The failing binary is `ros-jazzy-robotnik-controllers` version
 `1.0.0-20250407.075635-7bed613`. The upstream
 `RobotnikAutomation/robotnik_controllers` repository is referenced by Robotnik's
 interface documentation but is not anonymously accessible. A compatible controller
-binary or source checkout is therefore required before adding pose bridges or
-claiming the AM demo is operational.
+binary or source checkout is required before using Robotnik's controller directly.
+
+The local standard-controller launch was validated as a workaround:
+
+- All four controllers remain active:
+  - `joint_state_broadcaster`
+  - `steering_position_controller`
+  - `wheel_velocity_controller`
+  - `joint_trajectory_controller`
+- A command on `/robot/robotnik_base_control/cmd_vel_unstamped` with
+  `linear.x=0.15` and `linear.y=0.10` moved the Gazebo model pose from near
+  `(0.0, 0.0)` to about `(0.375, 0.225)`.
+- Steering joints settled near `0.588 rad`, matching `atan2(0.10, 0.15)`.
 
 ## Topic Discovery Procedure
 
@@ -123,10 +153,10 @@ After the simulator starts:
 
 ```bash
 ros2 topic list | sort
-ros2 topic info /robot/robotnik_base_control/cmd_vel -v
 ros2 topic info /robot/robotnik_base_control/cmd_vel_unstamped -v
+ros2 control list_controllers --controller-manager /robot/controller_manager
 ros2 topic list | grep -E 'pose|odom|tf|joint|tool|tcp'
-ros2 run tf2_ros tf2_echo robot/odom robot/base_link
+gz topic -e -t /model/robot/pose --json-output | grep '"name":"robot"'
 ```
 
 Expected command topics from Robotnik docs:
@@ -134,9 +164,9 @@ Expected command topics from Robotnik docs:
 - `/robot/robotnik_base_control/cmd_vel`: `geometry_msgs/msg/TwistStamped`
 - `/robot/robotnik_base_control/cmd_vel_unstamped`: `geometry_msgs/msg/Twist`
 
-These topic names are documented expectations, not runtime-verified interfaces while
-the released base controller crashes. The generic AM follower should start with the
-unstamped `Twist` command topic after a compatible controller is available.
+The local standard-controller workaround accepts the same unstamped `Twist` topic as
+its platform command input. The stamped Robotnik command topic is only expected when
+using Robotnik's own base controller.
 
 ## Pose Topic Contract For AM Nodes
 
@@ -145,16 +175,14 @@ The AM application packages expect external pose topics:
 - Base pose: `geometry_msgs/msg/PoseStamped`, example `/robot_pose`
 - TCP/nozzle pose: `geometry_msgs/msg/PoseStamped`, example `/current_tcp_pose`
 
-Robotnik simulation may expose pose through odometry and TF rather than exactly these
-topic names. Add small platform-side bridge/publisher nodes later if needed. Do not put
-Robotnik-specific pose extraction inside generic AM packages.
+The validated model pose source is the Gazebo topic `/model/robot/pose`. It emits
+Gazebo pose messages, not `geometry_msgs/msg/PoseStamped`, so add a platform-side
+bridge/publisher if generic AM nodes need `/robot_pose`. Do not put Robotnik-specific
+pose extraction inside generic AM packages.
 
 ## Next Checks
 
-1. Obtain or build a Jazzy-compatible `robotnik_controllers` implementation.
-2. Confirm that all three controllers remain active.
-3. Record the exact base odometry topic and TF chain.
-4. Record the exact TCP/nozzle TF chain.
-5. Confirm lateral velocity on the unstamped `Twist` command topic.
-6. Add only the minimal platform bridge nodes needed to publish `/robot_pose` and
+1. Add a platform-side bridge for `/model/robot/pose` to publish `/robot_pose`.
+2. Record the exact TCP/nozzle TF chain.
+3. Add only the minimal platform bridge nodes needed to publish `/robot_pose` and
    `/current_tcp_pose` for generic AM consumers.

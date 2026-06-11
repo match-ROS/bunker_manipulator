@@ -15,6 +15,9 @@
       joint_trajectory_controller:
         type: joint_trajectory_controller/JointTrajectoryController
 
+      arm_forward_velocity_controller:
+        type: velocity_controllers/JointGroupVelocityController
+
   steering_position_controller:
     ros__parameters:
       joints:
@@ -49,3 +52,13 @@
       action_monitor_rate: 20.0
       allow_partial_joints_goal: false
       open_loop_control: true
+
+  arm_forward_velocity_controller:
+    ros__parameters:
+      joints:
+        - robot_arm_shoulder_pan_joint
+        - robot_arm_shoulder_lift_joint
+        - robot_arm_elbow_joint
+        - robot_arm_wrist_1_joint
+        - robot_arm_wrist_2_joint
+        - robot_arm_wrist_3_joint

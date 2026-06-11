@@ -122,6 +122,20 @@ def generate_launch_description() -> LaunchDescription:
         output='screen',
     )
 
+    arm_velocity_controller_spawner = Node(
+        package='controller_manager',
+        executable='spawner',
+        namespace=robot_id,
+        arguments=[
+            '--controller-manager-timeout', '60',
+            '--service-call-timeout', '60',
+            '--param-file', controller_config,
+            '--inactive',
+            'arm_forward_velocity_controller',
+        ],
+        output='screen',
+    )
+
     swerve_controller = Node(
         package='rbvogui_ur_sim_setup',
         executable='rbvogui_swerve_controller.py',
@@ -157,6 +171,7 @@ def generate_launch_description() -> LaunchDescription:
         TimerAction(period=3.0, actions=[model_pose_bridge]),
         TimerAction(period=3.5, actions=[robot_pose_publisher]),
         TimerAction(period=4.0, actions=[controller_spawner]),
+        TimerAction(period=4.5, actions=[arm_velocity_controller_spawner]),
         TimerAction(period=7.0, actions=[tcp_pose_publisher]),
         TimerAction(period=8.0, actions=[swerve_controller]),
     ])

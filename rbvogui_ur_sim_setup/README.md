@@ -84,6 +84,7 @@ starts standard Jazzy joint-group controllers and a small platform-side swerve n
 - `/robot/steering_position_controller/commands`: steering joint position commands
 - `/robot/wheel_velocity_controller/commands`: wheel joint velocity commands
 - `/robot/joint_trajectory_controller`: UR arm trajectory controller
+- `/robot/arm_forward_velocity_controller/commands`: UR arm joint velocity commands
 
 The swerve node is intentionally platform-specific and lives in this setup package,
 not in `match_additive_manufacturing_ros2`.
@@ -139,11 +140,12 @@ binary or source checkout is required before using Robotnik's controller directl
 
 The local standard-controller launch was validated as a workaround:
 
-- All four controllers remain active:
+- The local standard-controller launch starts these controllers:
   - `joint_state_broadcaster`
   - `steering_position_controller`
   - `wheel_velocity_controller`
   - `joint_trajectory_controller`
+  - `arm_forward_velocity_controller` loaded inactive for later path following
 - A command on `/robot/robotnik_base_control/cmd_vel_unstamped` with
   `linear.x=0.15` and `linear.y=0.10` moved the Gazebo model pose from near
   `(0.0, 0.0)` to about `(0.375, 0.225)`.
@@ -171,6 +173,8 @@ ros2 topic info /robot/robotnik_base_control/cmd_vel_unstamped -v
 ros2 topic echo /robot_pose --once
 ros2 topic echo /current_tcp_pose --once
 ros2 control list_controllers --controller-manager /robot/controller_manager
+ros2 control list_hardware_interfaces --controller-manager /robot/controller_manager
+ros2 topic echo /robot/arm_forward_velocity_controller/commands --once
 ros2 topic list | grep -E 'pose|odom|tf|joint|tool|tcp'
 gz topic -e -t /world/robotnik_simple/dynamic_pose/info --json-output | grep '"name":"robot"'
 ```

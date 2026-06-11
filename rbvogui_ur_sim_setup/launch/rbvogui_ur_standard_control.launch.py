@@ -1,7 +1,8 @@
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
+from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, PythonExpression
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
@@ -14,17 +15,50 @@ def generate_launch_description() -> LaunchDescription:
         'config',
         'rbvogui_standard_controllers.yaml',
     ])
+    world_path = PathJoinSubstitution([
+        FindPackageShare('robotnik_gazebo_ignition'),
+        'worlds',
+        [LaunchConfiguration('world'), '.world'],
+    ])
 
-    world = IncludeLaunchDescription(
+    world_with_gui = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(PathJoinSubstitution([
-            FindPackageShare('robotnik_gazebo_ignition'),
+            FindPackageShare('ros_gz_sim'),
             'launch',
-            'spawn_world.launch.py',
+            'gz_sim.launch.py',
         ])),
         launch_arguments={
-            'world': LaunchConfiguration('world'),
-            'gui': LaunchConfiguration('gui'),
+            'gz_args': ['-r ', world_path],
+            'on_exit_shutdown': 'true',
         }.items(),
+        condition=IfCondition(PythonExpression([
+            "'", LaunchConfiguration('gui'),
+            "'.strip().lower() in ('true','1','yes','on')"
+        ])),
+    )
+
+    world_headless = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(PathJoinSubstitution([
+            FindPackageShare('ros_gz_sim'),
+            'launch',
+            'gz_sim.launch.py',
+        ])),
+        launch_arguments={
+            'gz_args': ['-r -s ', world_path],
+            'on_exit_shutdown': 'true',
+        }.items(),
+        condition=UnlessCondition(PythonExpression([
+            "'", LaunchConfiguration('gui'),
+            "'.strip().lower() in ('true','1','yes','on')"
+        ])),
+    )
+
+    clock_bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        name='gz_clock_bridge',
+        output='screen',
+        arguments=['/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'],
     )
 
     robot_description = IncludeLaunchDescription(
@@ -165,7 +199,9 @@ def generate_launch_description() -> LaunchDescription:
         DeclareLaunchArgument('x', default_value='0.0'),
         DeclareLaunchArgument('y', default_value='0.0'),
         DeclareLaunchArgument('z', default_value='0.1'),
-        world,
+        world_with_gui,
+        world_headless,
+        clock_bridge,
         robot_description,
         TimerAction(period=2.0, actions=[create_robot]),
         TimerAction(period=3.0, actions=[model_pose_bridge]),

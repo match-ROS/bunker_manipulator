@@ -87,6 +87,7 @@ def generate_launch_description():
         Command([
             'xacro ', urdf_file,
             ' controllers_yaml:=', controllers_yaml,
+            ' tracked_cmd_topic:=/bunker/tracked_cmd_vel',
             ' ur_initial_shoulder_pan_joint:=', ur_initial_shoulder_pan_joint,
             ' ur_initial_shoulder_lift_joint:=', ur_initial_shoulder_lift_joint,
             ' ur_initial_elbow_joint:=', ur_initial_elbow_joint,
@@ -149,9 +150,22 @@ def generate_launch_description():
         executable='parameter_bridge',
         arguments=[
             '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
-            '/world/empty/dynamic_pose/info@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V',
+            '/bunker/tracked_cmd_vel@geometry_msgs/msg/Twist]gz.msgs.Twist',
+            '/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry',
         ],
         output='screen'
+    )
+
+    tracked_command_converter = Node(
+        package='bunker_description',
+        executable='diff_drive_converter.py',
+        name='tracked_command_converter',
+        output='screen',
+        parameters=[{
+            'use_sim_time': True,
+            'input_topic': '/diff_drive_controller/cmd_vel',
+            'output_topic': '/bunker/tracked_cmd_vel',
+        }],
     )
 
     gazebo_model_tf_publisher = Node(
@@ -167,6 +181,8 @@ def generate_launch_description():
             'world_frame': 'map',
             'robot_base_frame': 'base_footprint',
             'odom_frame': 'odom',
+            'odom_topic': '/odom',
+            'localization_source': 'odom',
             'publish_robot_pose': True,
             'use_first_unnamed_pose': True,
         }],
@@ -178,16 +194,6 @@ def generate_launch_description():
         executable='spawner',
         arguments=[
             'joint_state_broadcaster',
-            '--controller-manager', '/controller_manager'
-        ],
-        output='screen'
-    )
-
-    diff_drive_spawner = Node(
-        package='controller_manager',
-        executable='spawner',
-        arguments=[
-            'diff_drive_controller',
             '--controller-manager', '/controller_manager'
         ],
         output='screen'
@@ -228,7 +234,6 @@ def generate_launch_description():
         OnProcessExit(
             target_action=joint_state_spawner,
             on_exit=[
-                diff_drive_spawner,
                 ur_joint_trajectory_spawner,
                 inactive_ur_controllers_spawner,
             ],
@@ -301,6 +306,7 @@ def generate_launch_description():
     ld.add_action(robot_state_publisher)
     ld.add_action(rviz)
     ld.add_action(ros_gz_bridge)
+    ld.add_action(tracked_command_converter)
     ld.add_action(gazebo_model_tf_publisher)
     ld.add_action(spawn_entity)
     ld.add_action(spawn_joint_state_after_robot)

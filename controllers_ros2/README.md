@@ -29,7 +29,7 @@ This package uses:
 From the workspace root:
 
 ```bash
-colcon build --packages-select controllers_ros2
+colcon build --symlink-install --packages-select controllers_ros2
 ```
 
 ## Run

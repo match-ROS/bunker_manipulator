@@ -5,6 +5,7 @@
 <robot  name="bunkur" xmlns:xacro="http://www.ros.org/wiki/xacro">
   <!-- xacro arg for controller params file (absolute path) injected from launch -->
   <xacro:arg name="controllers_yaml" default=""/>
+  <xacro:arg name="tracked_cmd_topic" default="/bunker/tracked_cmd_vel"/>
 
   <!-- KDL requires the root link to have no inertia. -->
   <link name="base_footprint"/>
@@ -98,6 +99,56 @@
       </geometry>
     </collision>
   </link>
+
+  <!--
+    Gazebo's native tracked-vehicle systems act on collision links representing
+    each continuous track. The visible wheel links remain for the model and arm
+    kinematics, but their contacts are frictionless below so they do not fight
+    the commanded track surface velocity during skid steering.
+  -->
+  <link name="left_track">
+    <inertial>
+      <origin xyz="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.08" iyz="0" izz="0.08"/>
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0"/>
+      <geometry>
+        <box size="0.90 0.11 0.064"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="left_track_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="left_track"/>
+    <origin xyz="0.0275 0.3495 -0.326"/>
+  </joint>
+
+  <link name="right_track">
+    <inertial>
+      <origin xyz="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.08" iyz="0" izz="0.08"/>
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0"/>
+      <geometry>
+        <box size="0.90 0.11 0.064"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="right_track_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="right_track"/>
+    <origin xyz="0.0275 -0.3495 -0.326"/>
+  </joint>
+  <gazebo reference="left_track_joint">
+    <preserveFixedJoint>true</preserveFixedJoint>
+  </gazebo>
+  <gazebo reference="right_track_joint">
+    <preserveFixedJoint>true</preserveFixedJoint>
+  </gazebo>
   <link
     name="wheel1_Link">
     <inertial>
@@ -1118,49 +1169,117 @@
     </plugin>
   </gazebo>
 
-  <!-- Gazebo physics tuning: ensure wheel collisions have enough friction so
-       wheel rotation turns into traction (otherwise the wheels can spin in place).
-       Adjust mu1/mu2 if it still slips. -->
+  <gazebo>
+    <plugin
+      filename="gz-sim-tracked-vehicle-system"
+      name="gz::sim::systems::TrackedVehicle">
+      <left_track>
+        <link>left_track</link>
+      </left_track>
+      <right_track>
+        <link>right_track</link>
+      </right_track>
+      <tracks_separation>0.699</tracks_separation>
+      <tracks_height>0.064</tracks_height>
+      <steering_efficiency>1.0</steering_efficiency>
+      <topic>$(arg tracked_cmd_topic)</topic>
+      <odom_topic>/odom</odom_topic>
+      <odom_publish_frequency>50</odom_publish_frequency>
+    </plugin>
+    <plugin
+      filename="gz-sim-track-controller-system"
+      name="gz::sim::systems::TrackController">
+      <link>left_track</link>
+      <min_velocity>-1.0</min_velocity>
+      <max_velocity>1.0</max_velocity>
+    </plugin>
+    <plugin
+      filename="gz-sim-track-controller-system"
+      name="gz::sim::systems::TrackController">
+      <link>right_track</link>
+      <min_velocity>-1.0</min_velocity>
+      <max_velocity>1.0</max_velocity>
+    </plugin>
+  </gazebo>
+
+  <gazebo reference="left_track">
+    <mu1>0.7</mu1>
+    <mu2>150.0</mu2>
+    <fdir1>0 1 0</fdir1>
+    <maxContacts>20</maxContacts>
+  </gazebo>
+  <gazebo reference="right_track">
+    <mu1>0.7</mu1>
+    <mu2>150.0</mu2>
+    <fdir1>0 1 0</fdir1>
+    <maxContacts>20</maxContacts>
+  </gazebo>
+
+  <!-- The native track links provide traction. Wheel contacts are visual/support
+       geometry only and must not oppose lateral skid during an in-place turn. -->
   <gazebo reference="wheel1_Link">
-    <mu1>0.8</mu1>
-    <mu2>0.8</mu2>
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
   </gazebo>
   <gazebo reference="wheel2_Link">
-    <mu1>0.8</mu1>
-    <mu2>0.8</mu2>
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
   </gazebo>
   <gazebo reference="wheel3_Link">
-    <mu1>0.8</mu1>
-    <mu2>0.8</mu2>
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
   </gazebo>
   <gazebo reference="wheel4_Link">
-    <mu1>0.8</mu1>
-    <mu2>0.8</mu2>
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
   </gazebo>
-  <!-- Friction parameters for additional track wheels -->
   <gazebo reference="wheel1.2_Link">
-    <mu1>0.8</mu1>
-    <mu2>0.8</mu2>
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
+  </gazebo>
+  <gazebo reference="wheel1.1_Link">
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
+  </gazebo>
+  <gazebo reference="wheel1.3_Link">
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
+  </gazebo>
+  <gazebo reference="wheel2.1_Link">
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
+  </gazebo>
+  <gazebo reference="wheel2.3_Link">
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
   </gazebo>
   <gazebo reference="wheel3.1_Link">
-    <mu1>0.8</mu1>
-    <mu2>0.8</mu2>
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
   </gazebo>
   <gazebo reference="wheel3.2_Link">
-    <mu1>0.8</mu1>
-    <mu2>0.8</mu2>
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
   </gazebo>
   <gazebo reference="wheel4.1_Link">
-    <mu1>0.8</mu1>
-    <mu2>0.8</mu2>
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
   </gazebo>
   <gazebo reference="wheel4.2_Link">
-    <mu1>0.8</mu1>
-    <mu2>0.8</mu2>
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
+  </gazebo>
+  <gazebo reference="wheel3.3_Link">
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
+  </gazebo>
+  <gazebo reference="wheel4.3_Link">
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
   </gazebo>
   <gazebo reference="wheel2.2_Link">
-    <mu1>0.8</mu1>
-    <mu2>0.8</mu2>
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
   </gazebo>
 
 </robot>

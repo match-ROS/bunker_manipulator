@@ -4,6 +4,7 @@ from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
     IncludeLaunchDescription,
+    OpaqueFunction,
     RegisterEventHandler,
     SetEnvironmentVariable,
     TimerAction,
@@ -20,6 +21,25 @@ from launch_ros.parameter_descriptions import ParameterValue
 def prepend_env_paths(variable_name, paths):
     existing_paths = os.environ.get(variable_name, '').split(os.pathsep)
     return os.pathsep.join(dict.fromkeys(path for path in [*paths, *existing_paths] if path))
+
+
+def launch_gazebo(context, *args, **kwargs):
+    world = LaunchConfiguration('world').perform(context)
+    headless = LaunchConfiguration('headless').perform(context).strip().lower()
+    server_only = headless in {'1', 'true', 'yes', 'on'}
+    gz_args = f"-r {'-s ' if server_only else ''}{world}"
+    return [
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                os.path.join(
+                    get_package_share_directory('ros_gz_sim'),
+                    'launch',
+                    'gz_sim.launch.py',
+                )
+            ),
+            launch_arguments={'gz_args': gz_args}.items(),
+        )
+    ]
 
 
 def generate_launch_description():
@@ -67,6 +87,7 @@ def generate_launch_description():
         Command([
             'xacro ', urdf_file,
             ' controllers_yaml:=', controllers_yaml,
+            ' tracked_cmd_topic:=/bunker/tracked_cmd_vel',
             ' ur_initial_shoulder_pan_joint:=', ur_initial_shoulder_pan_joint,
             ' ur_initial_shoulder_lift_joint:=', ur_initial_shoulder_lift_joint,
             ' ur_initial_elbow_joint:=', ur_initial_elbow_joint,
@@ -91,14 +112,6 @@ def generate_launch_description():
     gz_system_plugin_path = prepend_env_paths(
         'GZ_SIM_SYSTEM_PLUGIN_PATH',
         [gz_ros2_control_lib],
-    )
-
-    # Launch Gazebo Sim
-    gz_sim = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')
-        ),
-        launch_arguments={'gz_args': '-r empty.sdf'}.items()
     )
 
     robot_state_publisher = Node(
@@ -137,9 +150,22 @@ def generate_launch_description():
         executable='parameter_bridge',
         arguments=[
             '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
-            '/world/empty/dynamic_pose/info@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V',
+            '/bunker/tracked_cmd_vel@geometry_msgs/msg/Twist]gz.msgs.Twist',
+            '/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry',
         ],
         output='screen'
+    )
+
+    tracked_command_converter = Node(
+        package='bunker_description',
+        executable='diff_drive_converter.py',
+        name='tracked_command_converter',
+        output='screen',
+        parameters=[{
+            'use_sim_time': True,
+            'input_topic': '/diff_drive_controller/cmd_vel',
+            'output_topic': '/bunker/tracked_cmd_vel',
+        }],
     )
 
     gazebo_model_tf_publisher = Node(
@@ -155,6 +181,8 @@ def generate_launch_description():
             'world_frame': 'map',
             'robot_base_frame': 'base_footprint',
             'odom_frame': 'odom',
+            'odom_topic': '/odom',
+            'localization_source': 'odom',
             'publish_robot_pose': True,
             'use_first_unnamed_pose': True,
         }],
@@ -166,16 +194,6 @@ def generate_launch_description():
         executable='spawner',
         arguments=[
             'joint_state_broadcaster',
-            '--controller-manager', '/controller_manager'
-        ],
-        output='screen'
-    )
-
-    diff_drive_spawner = Node(
-        package='controller_manager',
-        executable='spawner',
-        arguments=[
-            'diff_drive_controller',
             '--controller-manager', '/controller_manager'
         ],
         output='screen'
@@ -216,7 +234,6 @@ def generate_launch_description():
         OnProcessExit(
             target_action=joint_state_spawner,
             on_exit=[
-                diff_drive_spawner,
                 ur_joint_trajectory_spawner,
                 inactive_ur_controllers_spawner,
             ],
@@ -285,10 +302,11 @@ def generate_launch_description():
     ld.add_action(world_arg)
     ld.add_action(headless_arg)
     ld.add_action(launch_rviz_arg)
-    ld.add_action(gz_sim)
+    ld.add_action(OpaqueFunction(function=launch_gazebo))
     ld.add_action(robot_state_publisher)
     ld.add_action(rviz)
     ld.add_action(ros_gz_bridge)
+    ld.add_action(tracked_command_converter)
     ld.add_action(gazebo_model_tf_publisher)
     ld.add_action(spawn_entity)
     ld.add_action(spawn_joint_state_after_robot)

@@ -1,0 +1,39 @@
+test_path_generator:
+  ros__parameters:
+    path_topic: /bunker_base_path
+    original_path_topic: /bunker_base_path_original
+    normal_topic: /bunker_path_normal
+    frame_id: map
+    path_type: line
+    publish_once: true
+    publish_rate: 1.0
+    num_points: 40
+    time_step: 0.1
+    orientation_mode: tangent
+    line_start: [0.0, 0.0, 0.0]
+    line_end: [1.0, 0.0, 0.0]
+
+simple_base_follower:
+  ros__parameters:
+    path_topic: /bunker_base_path
+    robot_pose_topic: /robot_pose
+    robot_pose_type: pose_stamped
+    cmd_vel_topic: /diff_drive_controller/cmd_vel
+    output_stamped: true
+    command_frame_id: base_footprint
+    publish_rate: 20.0
+    lookahead_distance: 0.35
+    stale_pose_timeout: 0.5
+    stop_on_goal: true
+    allow_reverse: false
+
+    kp_x: 0.55
+    kp_y: 0.0
+    kp_yaw: 1.0
+
+    max_vx: 0.25
+    max_vy: 0.0
+    max_wz: 0.6
+
+    xy_goal_tolerance: 0.06
+    yaw_goal_tolerance: 0.1

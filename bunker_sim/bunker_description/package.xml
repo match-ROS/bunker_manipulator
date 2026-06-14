@@ -18,6 +18,8 @@
   <exec_depend>joint_trajectory_controller</exec_depend>
   <exec_depend>nav_msgs</exec_depend>
   <exec_depend>position_controllers</exec_depend>
+  <exec_depend>base_trajectory_follower</exec_depend>
+  <exec_depend>parse_paths</exec_depend>
   <exec_depend>rclpy</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>ros_gz_bridge</exec_depend>

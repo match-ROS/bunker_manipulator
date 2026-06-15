@@ -4,6 +4,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -18,6 +19,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
+#include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/string.hpp>
 
 using namespace std::chrono_literals;
@@ -178,8 +180,12 @@ public:
     debug_twist_topic_ = declare_parameter<std::string>(
       "debug_twist_topic",
       "/" + robot_name_ + "/jparse_velocity_controller_" + arm_ + "/debug_twist");
+    readiness_topic_ = declare_parameter<std::string>(
+      "readiness_topic",
+      "/" + robot_name_ + "/jparse_velocity_controller_" + arm_ + "/ready");
     rate_hz_ = declare_parameter<double>("rate_hz", 500.0);
     command_timeout_ = declare_parameter<double>("command_timeout", 0.12);
+    joint_state_timeout_ = declare_parameter<double>("joint_state_timeout", 0.5);
     gamma_ = declare_parameter<double>("gamma", 0.1);
     singular_gain_position_ = declare_parameter<double>("singular_gain_position", 1.0);
     singular_gain_angular_ = declare_parameter<double>("singular_gain_angular", 1.0);
@@ -194,11 +200,14 @@ public:
     rate_hz_ = std::max(1.0, rate_hz_);
 
     command_pub_ =
-      create_publisher<std_msgs::msg::Float64MultiArray>(command_topic_, rclcpp::SystemDefaultsQoS());
+      create_publisher<std_msgs::msg::Float64MultiArray>(command_topic_,
+      rclcpp::SystemDefaultsQoS());
     singular_values_pub_ =
       create_publisher<std_msgs::msg::Float64MultiArray>(singular_values_topic_, 10);
     debug_twist_pub_ =
       create_publisher<std_msgs::msg::Float64MultiArray>(debug_twist_topic_, 10);
+    readiness_pub_ = create_publisher<std_msgs::msg::Bool>(
+      readiness_topic_, rclcpp::QoS(1).transient_local().reliable());
 
     auto robot_description_qos = rclcpp::QoS(1).transient_local().reliable();
     robot_description_sub_ = create_subscription<std_msgs::msg::String>(
@@ -224,13 +233,14 @@ public:
     const auto period = std::chrono::duration<double>(1.0 / rate_hz_);
     timer_ = create_wall_timer(
       std::chrono::duration_cast<std::chrono::nanoseconds>(period),
-      [this]() { update(); });
+      [this]() {update();});
 
     RCLCPP_INFO(
       get_logger(),
       "J-PARSE velocity controller ready for arm %s: %s -> %s, command=%s, twist=%s, debug=%s",
       arm_.c_str(), base_link_.c_str(), tip_link_.c_str(),
       command_topic_.c_str(), twist_topic_.c_str(), debug_twist_topic_.c_str());
+    publishReadiness(false);
   }
 
 private:
@@ -265,8 +275,32 @@ private:
 
     chain_ = chain;
     chain_joint_names_ = joint_names;
-    command_joint_names_ = declare_parameter<std::vector<std::string>>(
-      "command_joint_names", chain_joint_names_);
+    const auto command_joint_names_csv =
+      declare_parameter<std::string>("command_joint_names_csv", "");
+    if (command_joint_names_csv.empty()) {
+      command_joint_names_ = chain_joint_names_;
+    } else {
+      std::stringstream stream(command_joint_names_csv);
+      std::string joint_name;
+      while (std::getline(stream, joint_name, ',')) {
+        joint_name.erase(0, joint_name.find_first_not_of(" \t"));
+        joint_name.erase(joint_name.find_last_not_of(" \t") + 1);
+        if (!joint_name.empty()) {
+          command_joint_names_.push_back(joint_name);
+        }
+      }
+    }
+    for (const auto & joint_name : command_joint_names_) {
+      if (std::find(chain_joint_names_.begin(), chain_joint_names_.end(), joint_name) ==
+        chain_joint_names_.end())
+      {
+        RCLCPP_ERROR(
+          get_logger(), "Command joint '%s' is not part of the KDL chain", joint_name.c_str());
+        command_joint_names_.clear();
+        publishReadiness(false);
+        return;
+      }
+    }
     jac_solver_ = std::make_unique<KDL::ChainJntToJacSolver>(chain_);
     chain_ready_ = true;
 
@@ -280,6 +314,7 @@ private:
     for (std::size_t i = 0; i < msg.name.size(); ++i) {
       if (i < msg.position.size() && std::isfinite(msg.position[i])) {
         joint_positions_[msg.name[i]] = msg.position[i];
+        joint_state_times_[msg.name[i]] = now();
       }
     }
   }
@@ -302,7 +337,6 @@ private:
       target_twist_.tail<3>(), max_cartesian_angular_velocity_);
     last_twist_time_ = now();
     have_twist_ = true;
-    idle_zero_sent_ = false;
   }
 
   Eigen::Vector3d clampVectorNorm(const Eigen::Vector3d & value, double max_norm) const
@@ -345,23 +379,55 @@ private:
     publishCommand(std::vector<double>(command_joint_names_.size(), 0.0));
   }
 
-  void publishIdleZeroOnce()
+  bool jointStatesReady() const
   {
-    if (idle_zero_sent_) {
+    const auto current_time = now();
+    for (const auto & joint_name : chain_joint_names_) {
+      const auto position = joint_positions_.find(joint_name);
+      const auto stamp = joint_state_times_.find(joint_name);
+      if (position == joint_positions_.end() || stamp == joint_state_times_.end()) {
+        return false;
+      }
+      if ((current_time - stamp->second).seconds() > joint_state_timeout_) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void publishReadiness(bool ready)
+  {
+    const auto current_time = now();
+    if (
+      ready == ready_ && readiness_published_ &&
+      (current_time - last_readiness_publish_time_).seconds() < 1.0)
+    {
       return;
     }
-    publishZero();
-    idle_zero_sent_ = true;
+    std_msgs::msg::Bool msg;
+    msg.data = ready;
+    readiness_pub_->publish(msg);
+    ready_ = ready;
+    readiness_published_ = true;
+    last_readiness_publish_time_ = current_time;
   }
 
   void update()
   {
     if (!chain_ready_) {
+      publishReadiness(false);
+      return;
+    }
+
+    const bool joints_ready = jointStatesReady();
+    publishReadiness(joints_ready);
+    if (!joints_ready) {
+      publishZero();
       return;
     }
 
     if (!have_twist_ || (now() - last_twist_time_).seconds() > command_timeout_) {
-      publishIdleZeroOnce();
+      publishZero();
       return;
     }
 
@@ -448,8 +514,10 @@ private:
   std::string joint_states_topic_;
   std::string singular_values_topic_;
   std::string debug_twist_topic_;
+  std::string readiness_topic_;
   double rate_hz_;
   double command_timeout_;
+  double joint_state_timeout_;
   double gamma_;
   double singular_gain_position_;
   double singular_gain_angular_;
@@ -465,20 +533,25 @@ private:
   bool chain_ready_{false};
 
   std::map<std::string, double> joint_positions_;
+  std::map<std::string, rclcpp::Time> joint_state_times_;
   Eigen::Matrix<double, 6, 1> target_twist_{Eigen::Matrix<double, 6, 1>::Zero()};
   rclcpp::Time last_twist_time_{0, 0, RCL_ROS_TIME};
   bool have_twist_{false};
-  bool idle_zero_sent_{false};
+  bool ready_{false};
+  bool readiness_published_{false};
+  rclcpp::Time last_readiness_publish_time_{0, 0, RCL_ROS_TIME};
 
   rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr command_pub_;
   rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr singular_values_pub_;
   rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr debug_twist_pub_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr readiness_pub_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr robot_description_sub_;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_sub_;
   rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr twist_sub_;
   rclcpp::TimerBase::SharedPtr timer_;
 };
 
+#ifndef JPARSE_VELOCITY_CONTROLLER_NO_MAIN
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
@@ -486,3 +559,4 @@ int main(int argc, char ** argv)
   rclcpp::shutdown();
   return 0;
 }
+#endif

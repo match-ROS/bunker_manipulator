@@ -114,6 +114,7 @@ def generate_launch_description() -> LaunchDescription:
         executable='tf_model_pose_to_pose_stamped.py',
         name='rbvogui_robot_pose_publisher',
         output='screen',
+        condition=IfCondition(LaunchConfiguration('publish_robot_pose')),
         parameters=[{
             'use_sim_time': use_sim_time,
             'input_topic': '/world/robotnik_simple/dynamic_pose/info',
@@ -196,6 +197,7 @@ def generate_launch_description() -> LaunchDescription:
         DeclareLaunchArgument('world', default_value='empty'),
         DeclareLaunchArgument('gui', default_value='false'),
         DeclareLaunchArgument('use_sim_time', default_value='true'),
+        DeclareLaunchArgument('publish_robot_pose', default_value='true'),
         DeclareLaunchArgument('x', default_value='0.0'),
         DeclareLaunchArgument('y', default_value='0.0'),
         DeclareLaunchArgument('z', default_value='0.1'),

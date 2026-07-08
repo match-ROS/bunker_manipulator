@@ -8,6 +8,7 @@ install(DIRECTORY
   dependencies
   docs
   launch
+  meshes
   urdf
   DESTINATION share/${PROJECT_NAME}
 )

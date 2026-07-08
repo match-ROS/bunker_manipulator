@@ -5,7 +5,7 @@
   <xacro:include
     filename="$(find robotnik_description)/urdf/bodies/rbvogui_xl/rbvogui_xl_body.urdf.xacro" />
   <xacro:include
-    filename="$(find robotnik_description)/urdf/wheels/steering_wheel/steering_wheel_285.urdf.xacro" />
+    filename="$(find rbvogui_ur_sim_setup)/urdf/wheels/steering_wheel/steering_wheel_285.urdf.xacro" />
   <xacro:include
     filename="$(find robotnik_description)/urdf/arms/ur_macro.urdf.xacro" />
 

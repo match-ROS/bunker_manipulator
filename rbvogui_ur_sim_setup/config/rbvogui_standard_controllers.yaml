@@ -40,7 +40,7 @@
   lift_position_controller:
     ros__parameters:
       joints:
-        - robot_lift_top_joint
+        - robot_lift_joint
 
   joint_trajectory_controller:
     ros__parameters:

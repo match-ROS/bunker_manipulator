@@ -1,5 +1,5 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription, TimerAction
 from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, PythonExpression
@@ -172,6 +172,20 @@ def generate_launch_description() -> LaunchDescription:
         output='screen',
     )
 
+    lift_initial_command = ExecuteProcess(
+        cmd=[
+            'ros2',
+            'topic',
+            'pub',
+            '--once',
+            ['/', robot_id, '/lift_position_controller/commands'],
+            'std_msgs/msg/Float64MultiArray',
+            ['{data: [', LaunchConfiguration('lift_initial_position'), ']}'],
+        ],
+        output='screen',
+        condition=IfCondition(LaunchConfiguration('set_lift_initial_position')),
+    )
+
     swerve_controller = Node(
         package='rbvogui_ur_sim_setup',
         executable='rbvogui_swerve_controller.py',
@@ -199,6 +213,8 @@ def generate_launch_description() -> LaunchDescription:
         DeclareLaunchArgument('gui', default_value='false'),
         DeclareLaunchArgument('use_sim_time', default_value='true'),
         DeclareLaunchArgument('publish_robot_pose', default_value='true'),
+        DeclareLaunchArgument('set_lift_initial_position', default_value='true'),
+        DeclareLaunchArgument('lift_initial_position', default_value='0.2'),
         DeclareLaunchArgument('x', default_value='0.0'),
         DeclareLaunchArgument('y', default_value='0.0'),
         DeclareLaunchArgument('z', default_value='0.1'),
@@ -211,6 +227,7 @@ def generate_launch_description() -> LaunchDescription:
         TimerAction(period=3.5, actions=[robot_pose_publisher]),
         TimerAction(period=4.0, actions=[controller_spawner]),
         TimerAction(period=4.5, actions=[arm_velocity_controller_spawner]),
+        TimerAction(period=5.5, actions=[lift_initial_command]),
         TimerAction(period=7.0, actions=[tcp_pose_publisher]),
         TimerAction(period=8.0, actions=[swerve_controller]),
     ])

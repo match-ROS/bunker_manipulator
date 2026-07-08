@@ -1,7 +1,7 @@
 # RB-VOGUI + UR Simulation Setup
 
 This package is a lightweight integration point for early ROS 2 print-path following
-simulation with a Robotnik RB-VOGUI-class mobile base and a UR arm.
+simulation with the Robotnik RB-VOGUI-XL mobile base and a UR arm.
 
 It intentionally does not vendor third-party source code. Import the external public
 simulation repositories with `vcs` into a workspace when you need to run the simulation.
@@ -15,7 +15,7 @@ Robotnik simulation stack:
 - Repository: `https://github.com/RobotnikAutomation/robotnik_simulation`
 - Branch: `jazzy-devel`
 - Includes Gazebo/Ignition launch assets for Robotnik platforms.
-- Documents RB-VOGUI models `rbvogui` and `rbvogui_plus`.
+- Documents RB-VOGUI-XL models `rbvogui_xl`.
 - Command topics are documented as:
   - stamped: `/<robot_id>/robotnik_base_control/cmd_vel`
   - unstamped: `/<robot_id>/robotnik_base_control/cmd_vel_unstamped`
@@ -94,7 +94,7 @@ Complete bringup:
 
 ```bash
 ros2 launch robotnik_simulation_bringup bringup_complete.launch.py \
-  robot_model:=rbvogui_plus \
+  robot_model:=rbvogui_xl \
   use_gui:=true \
   use_rviz:=false
 ```
@@ -106,8 +106,8 @@ ros2 launch robotnik_gazebo_ignition spawn_world.launch.py world:=empty gui:=tru
 
 ros2 launch robotnik_gazebo_ignition spawn_robot.launch.py \
   robot_id:=robot \
-  robot:=rbvogui \
-  robot_model:=rbvogui_plus \
+  robot:=rbvogui_xl \
+  robot_model:=rbvogui_xl \
   arm_type:=ur20 \
   x:=0.0 y:=0.0 z:=0.1 \
   run_rviz:=false \
@@ -115,14 +115,17 @@ ros2 launch robotnik_gazebo_ignition spawn_robot.launch.py \
   low_performance_simulation:=true
 ```
 
-The imported `rbvogui_plus` description includes the UR arm and accepts `arm_type:=ur20`,
-but the upstream flow currently hits the controller issue recorded below.
+The local description mirrors the copied real-robot setup: RB-VOGUI-XL base geometry,
+285 mm wheels, an Ewellix 900 mm lift at the real mounting offset, and a UR20 mounted
+on the lift link. The copied real-robot bringup sets `ROBOT_DEVICES_LIFT_1_MODEL=none`,
+but this simulation exposes `robot_lift_joint` through a local standard position
+controller for testing.
 
 ## Runtime Validation Status
 
 Validation on ROS 2 Jazzy on June 10, 2026 established:
 
-- Gazebo creates the `rbvogui_plus` entity with the UR20 arm.
+- Gazebo creates the `rbvogui_xl`-class entity with the UR20 arm.
 - The base and arm hardware interfaces initialize.
 - `joint_state_broadcaster` loads and activates.
 - The released `robotnik_controllers` binary requires

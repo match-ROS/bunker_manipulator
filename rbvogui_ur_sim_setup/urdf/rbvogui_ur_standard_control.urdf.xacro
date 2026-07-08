@@ -7,12 +7,14 @@
   <xacro:include
     filename="$(find robotnik_description)/urdf/wheels/steering_wheel/steering_wheel.urdf.xacro" />
   <xacro:include
+    filename="$(find robotnik_description)/urdf/structures/ewellix/all_ewellix_lift.urdf.xacro" />
+  <xacro:include
     filename="$(find robotnik_description)/urdf/arms/ur_macro.urdf.xacro" />
 
   <xacro:arg name="namespace" default="robot" />
   <xacro:arg name="prefix" default="robot_" />
   <xacro:arg name="gazebo_ignition" default="true" />
-  <xacro:arg name="ur_type" default="ur5e" />
+  <xacro:arg name="ur_type" default="ur20" />
 
   <xacro:property name="wheel_offset_x" value="0.368" />
   <xacro:property name="wheel_offset_y" value="0.235" />
@@ -48,12 +50,19 @@
     <origin xyz="-${wheel_offset_x} -${wheel_offset_y} 0" rpy="0 0 0" />
   </xacro:steering_wheel>
 
+  <xacro:ewellix_lift_900mm
+    prefix="$(arg prefix)lift_"
+    parent="$(arg prefix)chassis_link"
+    cut_model="true">
+    <origin xyz="0 0 0.235" rpy="0 0 0" />
+  </xacro:ewellix_lift_900mm>
+
   <xacro:arm_ur
     ur_type="$(arg ur_type)"
     frame_prefix="$(arg prefix)arm_"
-    parent="$(arg prefix)chassis_link"
+    parent="$(arg prefix)lift_top_link"
     gazebo_ignition="$(arg gazebo_ignition)">
-    <origin xyz="0 0 0.235" rpy="0 0 0" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
   </xacro:arm_ur>
 
   <xacro:if value="$(arg gazebo_ignition)">

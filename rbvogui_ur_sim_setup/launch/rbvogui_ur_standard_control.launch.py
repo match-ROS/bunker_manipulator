@@ -151,6 +151,7 @@ def generate_launch_description() -> LaunchDescription:
             'joint_state_broadcaster',
             'steering_position_controller',
             'wheel_velocity_controller',
+            'lift_position_controller',
             'joint_trajectory_controller',
         ],
         output='screen',
@@ -192,7 +193,7 @@ def generate_launch_description() -> LaunchDescription:
 
     return LaunchDescription([
         DeclareLaunchArgument('robot_id', default_value='robot'),
-        DeclareLaunchArgument('arm_type', default_value='ur5e'),
+        DeclareLaunchArgument('arm_type', default_value='ur20'),
         DeclareLaunchArgument('world', default_value='empty'),
         DeclareLaunchArgument('gui', default_value='false'),
         DeclareLaunchArgument('use_sim_time', default_value='true'),

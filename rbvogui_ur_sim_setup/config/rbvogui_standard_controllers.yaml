@@ -12,6 +12,9 @@
       wheel_velocity_controller:
         type: velocity_controllers/JointGroupVelocityController
 
+      lift_position_controller:
+        type: position_controllers/JointGroupPositionController
+
       joint_trajectory_controller:
         type: joint_trajectory_controller/JointTrajectoryController
 
@@ -33,6 +36,11 @@
         - robot_front_right_wheel_joint
         - robot_back_left_wheel_joint
         - robot_back_right_wheel_joint
+
+  lift_position_controller:
+    ros__parameters:
+      joints:
+        - robot_lift_top_joint
 
   joint_trajectory_controller:
     ros__parameters:

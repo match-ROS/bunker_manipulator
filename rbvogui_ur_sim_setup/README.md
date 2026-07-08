@@ -83,6 +83,7 @@ starts standard Jazzy joint-group controllers and a small platform-side swerve n
 - `/current_tcp_pose`: `geometry_msgs/msg/PoseStamped`
 - `/robot/steering_position_controller/commands`: steering joint position commands
 - `/robot/wheel_velocity_controller/commands`: wheel joint velocity commands
+- `/robot/lift_position_controller/commands`: Ewellix lift position command
 - `/robot/joint_trajectory_controller`: UR arm trajectory controller
 - `/robot/arm_forward_velocity_controller/commands`: UR arm joint velocity commands
 
@@ -107,21 +108,21 @@ ros2 launch robotnik_gazebo_ignition spawn_robot.launch.py \
   robot_id:=robot \
   robot:=rbvogui \
   robot_model:=rbvogui_plus \
-  arm_type:=ur5e \
+  arm_type:=ur20 \
   x:=0.0 y:=0.0 z:=0.1 \
   run_rviz:=false \
   use_sim_time:=true \
   low_performance_simulation:=true
 ```
 
-The imported `rbvogui_plus` description includes the UR arm and accepts `arm_type:=ur5e`,
+The imported `rbvogui_plus` description includes the UR arm and accepts `arm_type:=ur20`,
 but the upstream flow currently hits the controller issue recorded below.
 
 ## Runtime Validation Status
 
 Validation on ROS 2 Jazzy on June 10, 2026 established:
 
-- Gazebo creates the `rbvogui_plus` entity with the UR5e arm.
+- Gazebo creates the `rbvogui_plus` entity with the UR20 arm.
 - The base and arm hardware interfaces initialize.
 - `joint_state_broadcaster` loads and activates.
 - The released `robotnik_controllers` binary requires
@@ -144,6 +145,7 @@ The local standard-controller launch was validated as a workaround:
   - `joint_state_broadcaster`
   - `steering_position_controller`
   - `wheel_velocity_controller`
+  - `lift_position_controller`
   - `joint_trajectory_controller`
   - `arm_forward_velocity_controller` loaded inactive for later path following
 - A command on `/robot/robotnik_base_control/cmd_vel_unstamped` with

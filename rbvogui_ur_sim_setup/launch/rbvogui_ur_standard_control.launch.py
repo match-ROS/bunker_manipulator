@@ -214,7 +214,7 @@ def generate_launch_description() -> LaunchDescription:
         DeclareLaunchArgument('use_sim_time', default_value='true'),
         DeclareLaunchArgument('publish_robot_pose', default_value='true'),
         DeclareLaunchArgument('set_lift_initial_position', default_value='true'),
-        DeclareLaunchArgument('lift_initial_position', default_value='0.2'),
+        DeclareLaunchArgument('lift_initial_position', default_value='0.0'),
         DeclareLaunchArgument('x', default_value='0.0'),
         DeclareLaunchArgument('y', default_value='0.0'),
         DeclareLaunchArgument('z', default_value='0.1'),

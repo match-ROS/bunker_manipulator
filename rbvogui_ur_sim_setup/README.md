@@ -120,6 +120,8 @@ The local description mirrors the copied real-robot setup: RB-VOGUI-XL base geom
 on the lift link. The copied real-robot bringup sets `ROBOT_DEVICES_LIFT_1_MODEL=none`,
 but this simulation exposes `robot_lift_joint` through a local standard position
 controller for testing.
+The retracted lift mount is currently estimated at about 0.35 m above the chassis
+top plate.
 The 285 mm wheel Xacros and rubber-wheel mesh are stored in this package so the
 external `robotnik_description` checkout can stay unchanged.
 

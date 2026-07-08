@@ -16,6 +16,12 @@
 
   <xacro:property name="wheel_offset_x" value="0.4795" />
   <xacro:property name="wheel_offset_y" value="0.2925" />
+  <xacro:property name="chassis_top_plate_z" value="0.2879" />
+  <xacro:property name="lift_base_mount_z" value="0.01" />
+  <xacro:property name="lift_retracted_height_above_top_plate" value="0.35" />
+  <xacro:property
+    name="lift_retracted_origin_z"
+    value="${chassis_top_plate_z - lift_base_mount_z + lift_retracted_height_above_top_plate}" />
 
   <xacro:rbvogui_xl_body prefix="$(arg prefix)" hq="true" />
 
@@ -74,7 +80,7 @@
     </inertial>
   </link>
   <joint name="$(arg prefix)lift_base_joint" type="fixed">
-    <origin xyz="0.26 0 0.01" rpy="0 0 0" />
+    <origin xyz="0.26 0 ${lift_base_mount_z}" rpy="0 0 0" />
     <parent link="$(arg prefix)chassis_link" />
     <child link="$(arg prefix)lift_base_link" />
   </joint>
@@ -101,7 +107,7 @@
     </inertial>
   </link>
   <joint name="$(arg prefix)lift_joint" type="prismatic">
-    <origin xyz="0 0 0" rpy="0 0 0" />
+    <origin xyz="0 0 ${lift_retracted_origin_z}" rpy="0 0 0" />
     <parent link="$(arg prefix)lift_base_link" />
     <child link="$(arg prefix)lift_link" />
     <limit effort="1000" lower="0.0" upper="0.9" velocity="0.088" />

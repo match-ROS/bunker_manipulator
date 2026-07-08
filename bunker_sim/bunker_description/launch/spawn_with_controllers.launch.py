@@ -59,6 +59,11 @@ def generate_launch_description():
         default_value='false',
         description='Start RViz with the BunkUR simulation configuration'
     )
+    publish_robot_pose_arg = DeclareLaunchArgument(
+        'publish_robot_pose',
+        default_value='true',
+        description='Publish /robot_pose from the Gazebo localization helper'
+    )
 
     package_name = 'bunker_description'
     pkg_share = get_package_share_directory(package_name)
@@ -173,6 +178,7 @@ def generate_launch_description():
         executable='gazebo_model_tf_publisher.py',
         name='gazebo_model_tf_publisher',
         output='screen',
+        condition=IfCondition(LaunchConfiguration('publish_robot_pose')),
         parameters=[{
             'use_sim_time': True,
             'gazebo_tf_topic': '/world/empty/dynamic_pose/info',
@@ -302,6 +308,7 @@ def generate_launch_description():
     ld.add_action(world_arg)
     ld.add_action(headless_arg)
     ld.add_action(launch_rviz_arg)
+    ld.add_action(publish_robot_pose_arg)
     ld.add_action(OpaqueFunction(function=launch_gazebo))
     ld.add_action(robot_state_publisher)
     ld.add_action(rviz)

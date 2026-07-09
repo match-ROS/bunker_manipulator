@@ -121,6 +121,7 @@ def generate_launch_description() -> LaunchDescription:
             'output_topic': '/robot_pose',
             'model_frame': robot_id,
             'world_frame': 'robotnik_simple',
+            'output_frame': 'map',
             'fallback_transform_index': 0,
             'publish_tf': True,
             'tf_child_frame': [robot_id, '_base_footprint'],
@@ -134,7 +135,7 @@ def generate_launch_description() -> LaunchDescription:
         output='screen',
         parameters=[{
             'use_sim_time': use_sim_time,
-            'target_frame': 'robotnik_simple',
+            'target_frame': 'map',
             'source_frame': [robot_id, '_arm_tool0'],
             'pose_topic': '/current_tcp_pose',
             'publish_rate': 20.0,

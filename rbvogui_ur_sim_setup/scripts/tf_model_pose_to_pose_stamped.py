@@ -18,12 +18,14 @@ class TfModelPoseToPoseStamped(Node):
         self.declare_parameter('output_topic', '/robot_pose')
         self.declare_parameter('model_frame', 'robot')
         self.declare_parameter('world_frame', 'robotnik_simple')
+        self.declare_parameter('output_frame', '')
         self.declare_parameter('fallback_transform_index', 0)
         self.declare_parameter('publish_tf', False)
         self.declare_parameter('tf_child_frame', '')
 
         self.model_frame = str(self.get_parameter('model_frame').value)
         self.world_frame = str(self.get_parameter('world_frame').value)
+        self.output_frame = str(self.get_parameter('output_frame').value).strip()
         self.fallback_transform_index = int(
             self.get_parameter('fallback_transform_index').value
         )
@@ -52,6 +54,8 @@ class TfModelPoseToPoseStamped(Node):
         pose.header = transform.header
         if not pose.header.frame_id:
             pose.header.frame_id = self.world_frame
+        if self.output_frame:
+            pose.header.frame_id = self.output_frame
         pose.pose.position.x = transform.transform.translation.x
         pose.pose.position.y = transform.transform.translation.y
         pose.pose.position.z = transform.transform.translation.z
@@ -63,6 +67,8 @@ class TfModelPoseToPoseStamped(Node):
             tf_transform.header.stamp = self.get_clock().now().to_msg()
             if not tf_transform.header.frame_id:
                 tf_transform.header.frame_id = self.world_frame
+            if self.output_frame:
+                tf_transform.header.frame_id = self.output_frame
             if self.tf_child_frame:
                 tf_transform.child_frame_id = self.tf_child_frame
             self.tf_broadcaster.sendTransform(tf_transform)

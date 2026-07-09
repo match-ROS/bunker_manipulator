@@ -12,17 +12,17 @@ Base pose:
 - Source in the validated launch: Gazebo
   `/world/robotnik_simple/dynamic_pose/info`, bridged to ROS and filtered in
   `rbvogui_ur_sim_setup`.
-- Frame ID: `robotnik_simple`
+- Frame ID: `map`
 
 TCP/nozzle pose:
 
 - Preferred AM topic: `/current_tcp_pose`
 - Type: `geometry_msgs/msg/PoseStamped`
-- Source in the validated launch: ROS TF lookup from `robotnik_simple` to
+- Source in the validated launch: ROS TF lookup from `map` to
   `robot_arm_tool0`
 - Root transform source: Gazebo `/world/robotnik_simple/dynamic_pose/info`,
   bridged and broadcast by `rbvogui_ur_sim_setup`
-- Frame ID: `robotnik_simple`
+- Frame ID: `map`
 
 ## Documented Outputs
 

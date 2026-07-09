@@ -164,7 +164,7 @@ The local standard-controller launch was validated as a workaround:
   `/robot_pose` from near `(0.0, 0.0)` to about `(0.285, 0.165)` after a short
   x/y command.
 - The same Gazebo model-pose stream publishes the TF root
-  `robotnik_simple -> robot_base_footprint`, which allows the generic
+  `map -> robot_base_footprint`, which allows the generic
   `current_pose_from_tf` node to publish `/current_tcp_pose` for
   `robot_arm_tool0`.
 
@@ -208,7 +208,7 @@ The validated model pose source is the Gazebo topic
 `/world/robotnik_simple/dynamic_pose/info`. The launch bridges it through
 `ros_gz_bridge` and publishes `/robot_pose` as `geometry_msgs/msg/PoseStamped`.
 The same source is also broadcast as the TF transform
-`robotnik_simple -> robot_base_footprint`, so `/current_tcp_pose` can be resolved
+`map -> robot_base_footprint`, so `/current_tcp_pose` can be resolved
 from the ROS robot-state TF tree to `robot_arm_tool0`.
 Do not put Robotnik-specific pose extraction inside generic AM packages.
 

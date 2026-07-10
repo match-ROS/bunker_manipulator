@@ -13,6 +13,20 @@
   <xacro:arg name="prefix" default="robot_" />
   <xacro:arg name="gazebo_ignition" default="true" />
   <xacro:arg name="ur_type" default="ur20" />
+  <!-- Requested pose: 180°, 90°, -90°, -90°, -90°, 0°; flange down. -->
+  <xacro:arg name="ur_initial_shoulder_pan_joint" default="3.141592653589793" />
+  <xacro:arg name="ur_initial_shoulder_lift_joint" default="3.141592653589793" />
+  <xacro:arg name="ur_initial_elbow_joint" default="-1.570796326794897" />
+  <xacro:arg name="ur_initial_wrist_1_joint" default="0.0" />
+  <xacro:arg name="ur_initial_wrist_2_joint" default="1.570796326794897" />
+  <xacro:arg name="ur_initial_wrist_3_joint" default="0.0" />
+  <xacro:property name="ur_initial_positions" value="${dict(
+    shoulder_pan_joint=float('$(arg ur_initial_shoulder_pan_joint)'),
+    shoulder_lift_joint=float('$(arg ur_initial_shoulder_lift_joint)'),
+    elbow_joint=float('$(arg ur_initial_elbow_joint)'),
+    wrist_1_joint=float('$(arg ur_initial_wrist_1_joint)'),
+    wrist_2_joint=float('$(arg ur_initial_wrist_2_joint)'),
+    wrist_3_joint=float('$(arg ur_initial_wrist_3_joint)'))}" />
 
   <xacro:property name="wheel_offset_x" value="0.4795" />
   <xacro:property name="wheel_offset_y" value="0.2925" />
@@ -126,7 +140,8 @@
     ur_type="$(arg ur_type)"
     frame_prefix="$(arg prefix)arm_"
     parent="$(arg prefix)lift_link"
-    gazebo_ignition="$(arg gazebo_ignition)">
+    gazebo_ignition="$(arg gazebo_ignition)"
+    initial_positions="${ur_initial_positions}">
     <origin xyz="0 0 0" rpy="0 0 0" />
   </xacro:arm_ur>
 

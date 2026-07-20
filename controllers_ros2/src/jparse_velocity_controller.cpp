@@ -12,6 +12,7 @@
 #include <Eigen/Dense>
 #include <geometry_msgs/msg/twist_stamped.hpp>
 #include <kdl/chain.hpp>
+#include <kdl/chainfksolverpos_recursive.hpp>
 #include <kdl/chainjnttojacsolver.hpp>
 #include <kdl/jacobian.hpp>
 #include <kdl/jntarray.hpp>
@@ -19,6 +20,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
+#include <std_msgs/msg/float32.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/string.hpp>
 
@@ -174,6 +176,12 @@ public:
       "command_topic", "/" + robot_name_ + "/forward_velocity_controller_" + arm_ + "/commands");
     joint_states_topic_ = declare_parameter<std::string>(
       "joint_states_topic", "/" + robot_name_ + "/joint_states");
+    spray_distance_topic_ = declare_parameter<std::string>(
+      "spray_distance_topic", "/spray_distance_smoothed");
+    fixed_tool_offset_xyz_ = declare_parameter<std::vector<double>>(
+      "fixed_tool_offset_xyz", {0.0, 0.0, 0.0});
+    fixed_tool_offset_quaternion_xyzw_ = declare_parameter<std::vector<double>>(
+      "fixed_tool_offset_quaternion_xyzw", {0.0, 0.0, 0.0, 1.0});
     singular_values_topic_ = declare_parameter<std::string>(
       "singular_values_topic",
       "/" + robot_name_ + "/jparse_velocity_controller_" + arm_ + "/singular_values");
@@ -224,6 +232,14 @@ public:
         updateJointState(*msg);
       });
 
+    spray_distance_sub_ = create_subscription<std_msgs::msg::Float32>(
+      spray_distance_topic_, rclcpp::QoS(10),
+      [this](const std_msgs::msg::Float32::SharedPtr msg) {
+        if (std::isfinite(msg->data)) {
+          spray_distance_ = static_cast<double>(msg->data);
+        }
+      });
+
     twist_sub_ = create_subscription<geometry_msgs::msg::TwistStamped>(
       twist_topic_, rclcpp::SystemDefaultsQoS(),
       [this](const geometry_msgs::msg::TwistStamped::SharedPtr msg) {
@@ -259,6 +275,26 @@ private:
         base_link_.c_str(), tip_link_.c_str());
       return;
     }
+
+    if (fixed_tool_offset_xyz_.size() != 3 || fixed_tool_offset_quaternion_xyzw_.size() != 4) {
+      RCLCPP_ERROR(get_logger(), "Tool offset requires xyz[3] and quaternion_xyzw[4]");
+      return;
+    }
+    const double qx = fixed_tool_offset_quaternion_xyzw_[0];
+    const double qy = fixed_tool_offset_quaternion_xyzw_[1];
+    const double qz = fixed_tool_offset_quaternion_xyzw_[2];
+    const double qw = fixed_tool_offset_quaternion_xyzw_[3];
+    const double qnorm = std::sqrt(qx * qx + qy * qy + qz * qz + qw * qw);
+    if (qnorm < 1e-9) {
+      RCLCPP_ERROR(get_logger(), "Tool offset quaternion must be non-zero");
+      return;
+    }
+    chain.addSegment(KDL::Segment(
+      "jparse_fixed_tool_offset", KDL::Joint(KDL::Joint::None),
+      KDL::Frame(
+        KDL::Rotation::Quaternion(qx / qnorm, qy / qnorm, qz / qnorm, qw / qnorm),
+        KDL::Vector(
+          fixed_tool_offset_xyz_[0], fixed_tool_offset_xyz_[1], fixed_tool_offset_xyz_[2]))));
 
     std::vector<std::string> joint_names;
     for (unsigned int i = 0; i < chain.getNrOfSegments(); ++i) {
@@ -302,10 +338,11 @@ private:
       }
     }
     jac_solver_ = std::make_unique<KDL::ChainJntToJacSolver>(chain_);
+    fk_solver_ = std::make_unique<KDL::ChainFkSolverPos_recursive>(chain_);
     chain_ready_ = true;
 
     RCLCPP_INFO(
-      get_logger(), "Configured KDL chain with %zu joints from %s to %s",
+      get_logger(), "Configured KDL chain with %zu joints from %s to %s plus fixed tool offset",
       chain_joint_names_.size(), base_link_.c_str(), tip_link_.c_str());
   }
 
@@ -444,12 +481,30 @@ private:
       return;
     }
 
+    KDL::Frame tip_frame;
+    if (fk_solver_->JntToCart(q, tip_frame) < 0) {
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000, "KDL forward kinematics failed");
+      publishZero();
+      return;
+    }
+    const KDL::Vector deposition_offset_world =
+      tip_frame.M * KDL::Vector(0.0, 0.0, spray_distance_);
+
     Eigen::MatrixXd jacobian(6, static_cast<Eigen::Index>(chain_joint_names_.size()));
     for (unsigned int col = 0; col < kdl_jacobian.columns(); ++col) {
       for (unsigned int row = 0; row < 6; ++row) {
         jacobian(static_cast<Eigen::Index>(row), static_cast<Eigen::Index>(col)) =
           kdl_jacobian(row, col);
       }
+      const double wx = kdl_jacobian(3, col);
+      const double wy = kdl_jacobian(4, col);
+      const double wz = kdl_jacobian(5, col);
+      jacobian(0, static_cast<Eigen::Index>(col)) +=
+        wy * deposition_offset_world.z() - wz * deposition_offset_world.y();
+      jacobian(1, static_cast<Eigen::Index>(col)) +=
+        wz * deposition_offset_world.x() - wx * deposition_offset_world.z();
+      jacobian(2, static_cast<Eigen::Index>(col)) +=
+        wx * deposition_offset_world.y() - wy * deposition_offset_world.x();
     }
 
     Eigen::VectorXd singular_values;
@@ -512,6 +567,7 @@ private:
   std::string twist_topic_;
   std::string command_topic_;
   std::string joint_states_topic_;
+  std::string spray_distance_topic_;
   std::string singular_values_topic_;
   std::string debug_twist_topic_;
   std::string readiness_topic_;
@@ -525,12 +581,16 @@ private:
   double max_joint_velocity_;
   double max_cartesian_linear_velocity_;
   double max_cartesian_angular_velocity_;
+  std::vector<double> fixed_tool_offset_xyz_;
+  std::vector<double> fixed_tool_offset_quaternion_xyzw_;
 
   KDL::Chain chain_;
   std::unique_ptr<KDL::ChainJntToJacSolver> jac_solver_;
+  std::unique_ptr<KDL::ChainFkSolverPos_recursive> fk_solver_;
   std::vector<std::string> chain_joint_names_;
   std::vector<std::string> command_joint_names_;
   bool chain_ready_{false};
+  double spray_distance_{0.0};
 
   std::map<std::string, double> joint_positions_;
   std::map<std::string, rclcpp::Time> joint_state_times_;
@@ -547,6 +607,7 @@ private:
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr readiness_pub_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr robot_description_sub_;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_sub_;
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr spray_distance_sub_;
   rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr twist_sub_;
   rclcpp::TimerBase::SharedPtr timer_;
 };

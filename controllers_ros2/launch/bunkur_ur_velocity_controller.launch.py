@@ -12,6 +12,12 @@ def generate_launch_description():
         DeclareLaunchArgument('arm', default_value='ur'),
         DeclareLaunchArgument('base_link', default_value='base_link'),
         DeclareLaunchArgument('tip_link', default_value='tool0'),
+        DeclareLaunchArgument('fixed_tool_offset_xyz', default_value='[0.0, 0.0, 0.0]'),
+        DeclareLaunchArgument(
+            'fixed_tool_offset_quaternion_xyzw',
+            default_value='[0.0, 0.0, 0.0, 1.0]',
+        ),
+        DeclareLaunchArgument('spray_distance_topic', default_value='/spray_distance_smoothed'),
         DeclareLaunchArgument('robot_description_topic', default_value='/robot_description'),
         DeclareLaunchArgument('twist_topic', default_value='~/twist_cmd'),
         DeclareLaunchArgument(
@@ -55,6 +61,11 @@ def generate_launch_description():
                 'arm': LaunchConfiguration('arm'),
                 'base_link': LaunchConfiguration('base_link'),
                 'tip_link': LaunchConfiguration('tip_link'),
+                'fixed_tool_offset_xyz': LaunchConfiguration('fixed_tool_offset_xyz'),
+                'fixed_tool_offset_quaternion_xyzw': LaunchConfiguration(
+                    'fixed_tool_offset_quaternion_xyzw'
+                ),
+                'spray_distance_topic': LaunchConfiguration('spray_distance_topic'),
                 'robot_description_topic': LaunchConfiguration('robot_description_topic'),
                 'twist_topic': LaunchConfiguration('twist_topic'),
                 'command_topic': LaunchConfiguration('command_topic'),

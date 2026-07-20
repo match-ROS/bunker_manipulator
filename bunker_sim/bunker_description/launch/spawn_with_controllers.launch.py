@@ -64,6 +64,11 @@ def generate_launch_description():
         default_value='true',
         description='Publish /robot_pose from the Gazebo localization helper'
     )
+    ur_type_arg = DeclareLaunchArgument(
+        'ur_type',
+        default_value='ur20',
+        description='Universal Robots arm model mounted on the Bunker.',
+    )
 
     package_name = 'bunker_description'
     pkg_share = get_package_share_directory(package_name)
@@ -81,6 +86,7 @@ def generate_launch_description():
     )
     # Use the launch config for xacro command
     controllers_yaml = LaunchConfiguration('controllers_yaml')
+    ur_type = LaunchConfiguration('ur_type')
     ur_initial_shoulder_pan_joint = LaunchConfiguration('ur_initial_shoulder_pan_joint')
     ur_initial_shoulder_lift_joint = LaunchConfiguration('ur_initial_shoulder_lift_joint')
     ur_initial_elbow_joint = LaunchConfiguration('ur_initial_elbow_joint')
@@ -93,6 +99,7 @@ def generate_launch_description():
             'xacro ', urdf_file,
             ' controllers_yaml:=', controllers_yaml,
             ' tracked_cmd_topic:=/bunker/tracked_cmd_vel',
+            ' ur_type:=', ur_type,
             ' ur_initial_shoulder_pan_joint:=', ur_initial_shoulder_pan_joint,
             ' ur_initial_shoulder_lift_joint:=', ur_initial_shoulder_lift_joint,
             ' ur_initial_elbow_joint:=', ur_initial_elbow_joint,
@@ -309,6 +316,7 @@ def generate_launch_description():
     ld.add_action(headless_arg)
     ld.add_action(launch_rviz_arg)
     ld.add_action(publish_robot_pose_arg)
+    ld.add_action(ur_type_arg)
     ld.add_action(OpaqueFunction(function=launch_gazebo))
     ld.add_action(robot_state_publisher)
     ld.add_action(rviz)

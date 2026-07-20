@@ -21,6 +21,8 @@ def _optional_sim_launch(context, *args, **kwargs):
             ),
             launch_arguments={
                 'launch_rviz': LaunchConfiguration('launch_rviz'),
+                'headless': LaunchConfiguration('headless'),
+                'ur_type': 'ur20',
             }.items(),
         )
     ]
@@ -71,6 +73,7 @@ def generate_launch_description():
         DeclareLaunchArgument('use_sim_time', default_value='true'),
         DeclareLaunchArgument('launch_sim', default_value='false'),
         DeclareLaunchArgument('launch_rviz', default_value='false'),
+        DeclareLaunchArgument('headless', default_value='true'),
         DeclareLaunchArgument('path_type', default_value='line'),
         DeclareLaunchArgument('path_frame', default_value='map'),
         DeclareLaunchArgument('path_topic', default_value='/bunker_base_path'),

@@ -21,6 +21,11 @@ simple_base_follower:
     cmd_vel_topic: /diff_drive_controller/cmd_vel
     output_stamped: true
     command_frame_id: base_footprint
+    follower_type: pure_pursuit
+    diff_drive_mode: true
+    use_external_path_index: true
+    path_index_topic: /path_index
+    external_path_index_stride: 1
     publish_rate: 20.0
     lookahead_distance: 0.35
     stale_pose_timeout: 0.5

@@ -19,7 +19,7 @@
   <xacro:include filename="$(find ur_description)/urdf/ur_macro.xacro"/>
   <xacro:include filename="$(find ur_simulation_gz)/urdf/ur_gz.ros2_control.xacro"/>
 
-  <xacro:arg name="ur_type" default="ur10e"/>
+  <xacro:arg name="ur_type" default="ur20"/>
   <xacro:arg name="ur_tf_prefix" default="ur_"/>
   <xacro:arg name="ur_mount_xyz" default="0.3 0 0.05"/>
   <xacro:arg name="ur_mount_rpy" default="0 0 0"/>
